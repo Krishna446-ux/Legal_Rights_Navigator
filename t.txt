@@ -1,0 +1,55 @@
+Two bugs found and fixed in 
+
+main.py
+:
+
+What was wrong
+#	Issue	Effect
+1	Trailing slash on "http://127.0.0.1:3000/" in origins	Browsers do exact-string matching on the Origin header — no trailing slash is ever sent, so the origin never matched → browser blocked the cookie from cross-origin requests
+2	auth_middleware registered before CORSMiddleware	Starlette applies middleware in reverse order (last-added = first-to-run). With the old order, auth_middleware was the outermost wrapper, running before CORS headers were applied. Now CORS runs first (outermost), then auth.
+What to check next (if still broken)
+Make sure you're consistently using either localhost:3000 or 127.0.0.1:3000 — not mixing them. Browsers treat these as different origins, and a cookie set on one won't be sent to the other.
+The jwt_token cookie is set by /auth/callback on the backend's domain (127.0.0.1:8000). The frontend fetch to 127.0.0.1:8000/me will send it correctly. But if your frontend runs on localhost:3000 and the OAuth callback sets the cookie on 127.0.0.1, browsers may block it. Make sure you use the same hostname everywhere consistently.
+
+UseAuth() wraps useContext(AuthContext) and can return null. When it returned null, destructuring { profile, loading } from null threw an error, causing the component to bail out before useEffect ran. React saw:
+
+Render 1 (null context): useContext → crash → only 1-2 hooks executed
+Render 2 (valid context): useContext → useRouter → useEffect → 3 hooks executed
+This violates the Rules of Hooks — hooks must be called in the same order every render. this was found by claude opus oh my god 
+
+
+same site lax Issue
+
+origin is created of three parts 
+
+protocol + domain + ports
+http:// localhost : 3000
+
+CORS deals with different orgiin requests -> 
+http://localhost:3000
+http://localhost:8000
+
+httponly: this is cookie setting,now the frontend (js running in broswer) cannot access these cookies
+
+samesite: strict / lax / none 
+none does not wokr now a days
+lax and strict, just use lax better that way
+this deals with domain, cookie sent from a domain can only be sent back to this domain, 
+when a frontend (js running on broswer) sends to a fetch request, with credentials , then broswer 
+before attaching the cookie check ifs both the domain where the cookies came from and domain where 
+fetch request orginates are same, in case they are not, cookies are not attached and we get the famous 
+issue of cookie never sent
+
+fix-> changed the domain of frontend to 127.0.0.1
+
+
+    Only call Hooks inside:
+    1. A React function component.
+    2. A custom hook (a function whose name starts with use).
+* Do not call Hooks inside:
+    * Regular utility functions.
+    * Event handlers.
+    * Loops.
+    * Conditions.
+    * Nested functions.
+    * At the top level of a module.
