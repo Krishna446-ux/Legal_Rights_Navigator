@@ -1,20 +1,21 @@
 #remove these parts after development is done
-import os 
-import logging
+import os
 os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 ################################################
-from fastapi import APIRouter,FastAPI,Request
+from loguru import logger
+from fastapi import APIRouter, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from api.authRoute import router as auth_router
 from core.config import setting
 from middlewares.auth_middleware import auth_middleware
+
 app = FastAPI()
 router = APIRouter()
 app.include_router(auth_router)
 
 origins = [
     "http://localhost:3000",
-    "http://127.0.0.1:3000",  # no trailing slash
+    "http://127.0.0.1:3000",
 ]
 
 app.add_middleware(
@@ -32,13 +33,16 @@ app.middleware("http")(auth_middleware)
 @app.get("/")
 async def root():
     return {"message": "Hello World"}
+
 @app.get("/me")
-async def get_user_info(request:Request):
-    user_info = request.state.user_info
-    logging.info(f"User info: {user_info}")
-    if user_info is None:
-        return {"error": "User not authenticated"}
-    return {"user_info": user_info}
-
-
-
+async def get_user_info(request: Request):
+    try:
+        user_info = request.state.user_info
+        logger.info(f"User info requested: {user_info}")
+        if user_info is None:
+            logger.warning("Unauthenticated request to /me")
+            return {"error": "User not authenticated"}
+        return {"user_info": user_info}
+    except Exception as e:
+        logger.exception(f"Unexpected error in /me endpoint: {e}")
+        return {"error": "Internal server error"}
