@@ -9,7 +9,6 @@ from googleapiclient.discovery import build
 # client_secret.json file. The client ID (from that file) and access scopes are required. (You can
 # also use the from_client_config method, which passes the client configuration as it originally
 # appeared in a client secrets file but doesn't access the file itself.)
-def create_google_flow(state:str|None=None,code_verifier:str|None=None)->Flow:
 
 def create_google_flow(state: str | None = None, code_verifier: str | None = None) -> Flow:
     logger.debug(f"Creating Google OAuth flow with state={state}")

@@ -53,3 +53,7 @@ fix-> changed the domain of frontend to 127.0.0.1
     * Conditions.
     * Nested functions.
     * At the top level of a module.
+
+
+Ingestion Pipeline is delicate, right now it can easily have duplicate chunks, a simple way we are doing over here 
+is deleting the entire table data, and then refilling it with stuff
