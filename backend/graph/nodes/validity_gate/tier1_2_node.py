@@ -1,6 +1,10 @@
 from graph.nodes.validity_gate.validity_gate import run_validity_gate
 from graph.state import FullGraphState
 from loguru import logger
+# class GateResult(str, Enum):
+#     PASS = "pass"
+#     REJECT = "reject"
+#     UNCERTAIN = "uncertain"
 def tier1_2_node(state:FullGraphState):
     try:
         result=run_validity_gate(state)

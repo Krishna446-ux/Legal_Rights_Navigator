@@ -193,7 +193,10 @@ def ask_llama_for_boundaries(block_batch):
         "end_block": "b0005",
         "summary": "Short summary of the chunk.",
         "topics": ["contract labour", "registration"],
-        "chunk_type": "section"
+        "chunk_type": Literal[
+        "definition", "eligibility", "procedure",
+        "right", "obligation", "penalty", "exception"
+    ] | None = None
         }}
     ]
     }}

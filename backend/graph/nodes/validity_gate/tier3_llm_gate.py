@@ -1,19 +1,12 @@
-import json
-from typing import Literal, Optional
 from loguru import logger
-from graph.enum.Domain import Domain
+from enums.Domain import Domain
 from graph.state import FullGraphState
-from graph.nodes.validity_gate.rules import GateResult
-from core.config import setting
-from langchain_groq import ChatGroq
-from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain_mistralai import ChatMistralAI
-from langchain_openai import ChatOpenAI
 from langchain_core.output_parsers import PydanticOutputParser
 from pydantic import BaseModel
 from langchain_core.prompts import ChatPromptTemplate
+from services.llm_manager import LLMManager
 
-
+llm_manager=LLMManager()
 class Tier3Response(BaseModel):
     is_legal: bool
     is_legal_confidence: float
@@ -62,11 +55,8 @@ Rules:
 
 Respond with ONLY this JSON format, nothing else, no markdown fences:
 {{
-  "is_legal": true or false,
+  "is_legal": pass or reject,
   "is_legal_confidence": 0.0 to 1.0,
-  "domain": "labour_employment" | "consumer_protection" | "tenant_property" | "cyber_crime" | "family_womens_rights" | "other_legal" | null,
-  "domain_confidence": 0.0 to 1.0,
-  "needs_clarification": true or false,
   "reasoning": "one sentence explanation covering both the legality and domain decision"
 }}"""
 
@@ -82,29 +72,7 @@ async def tier3_llm_gate(state: FullGraphState):
     logger.info(f"Tier 3 LLM gate invoked for query='{query[:80]}'")
 
     try:
-        groq = ChatGroq(
-            model="llama-3.3-70b-versatile",
-            api_key=setting.GROQ_API_KEY,
-            temperature=0, max_retries=2, max_tokens=200,
-        )
-        gemini = ChatGoogleGenerativeAI(
-            model="gemini-2.5-flash",
-            google_api_key=setting.GOOGLE_API_KEY,
-            temperature=0, max_retries=2, max_tokens=200,
-        )
-        mistral = ChatMistralAI(
-            model_name="mistral-small-latest",
-            api_key=setting.MISTRAL_API_KEY,
-            temperature=0, max_retries=2, max_tokens=200,
-        )
-        openrouter = ChatOpenAI(
-            model="deepseek/deepseek-r1-0528:free",
-            api_key=setting.OPENAI_API_KEY,
-            base_url="https://openrouter.ai/api/v1",
-            temperature=0, max_retries=2,
-        )
-
-        llm = groq.with_fallbacks([gemini, mistral, openrouter])
+        llm = llm_manager.groq.with_fallbacks([llm_manager.gemini, llm_manager.mistral, llm_manager.openrouter])
         prompt = ChatPromptTemplate.from_template(TIER3_GATE_PROMPT)
         parser = PydanticOutputParser(pydantic_object=Tier3Response)
         chain = prompt | llm | parser
@@ -112,7 +80,7 @@ async def tier3_llm_gate(state: FullGraphState):
         result = await chain.ainvoke({"query": query})
         logger.info(
             f"Tier 3 result: is_legal={result.is_legal}, "
-            f"confidence={result.confidence:.2f}, reasoning='{result.reasoning}'"
+            f"confidence={result.is_legal_confidence:.2f}, reasoning='{result.reasoning}'"
         )
         return result
 

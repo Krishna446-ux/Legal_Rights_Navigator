@@ -1,11 +1,7 @@
 import re
 from enum import Enum
-
-
-class GateResult(str, Enum):
-    PASS = "pass"
-    REJECT = "reject"
-    UNCERTAIN = "uncertain"
+from loguru import logger
+from enums.GateResult import GateResult
 
 
 _GREETINGS = {
@@ -302,20 +298,31 @@ def apply_tier1_rules(query: str) -> GateResult:
     legal queries should fall through as UNCERTAIN to Tier 2.
     """
     normalized = query.strip().lower()
+    logger.debug(f"Tier 1: evaluating query (length={len(normalized)}): '{normalized[:80]}'")
 
-    if len(normalized) < _MIN_LENGTH:
-        return GateResult.REJECT
-
-    if normalized in _GREETINGS:
-        return GateResult.REJECT
-
-    if _SPAM_PATTERN.search(normalized):
-        return GateResult.REJECT
-
-    for pattern in _OFFTOPIC_PATTERNS:
-        if re.search(pattern, normalized):
+    try:
+        if len(normalized) < _MIN_LENGTH:
+            logger.info(f"Tier 1 REJECT: query too short (length={len(normalized)})")
             return GateResult.REJECT
 
-    # Tier 1 never confidently PASSes a query as legal —
-    # that judgment needs semantic understanding (Tier 2/3).
-    return GateResult.UNCERTAIN
+        if normalized in _GREETINGS:
+            logger.info(f"Tier 1 REJECT: query matched greeting set: '{normalized}'")
+            return GateResult.REJECT
+
+        if _SPAM_PATTERN.search(normalized):
+            logger.info(f"Tier 1 REJECT: query matched spam pattern: '{normalized[:40]}'")
+            return GateResult.REJECT
+
+        for pattern in _OFFTOPIC_PATTERNS:
+            if re.search(pattern, normalized):
+                logger.info(f"Tier 1 REJECT: query matched off-topic pattern '{pattern}': '{normalized[:80]}'")
+                return GateResult.REJECT
+
+        # Tier 1 never confidently PASSes a query as legal —
+        # that judgment needs semantic understanding (Tier 2/3).
+        logger.debug("Tier 1 UNCERTAIN: no reject rule matched, escalating to Tier 2")
+        return GateResult.UNCERTAIN
+
+    except Exception as e:
+        logger.exception(f"Tier 1 rules evaluation crashed unexpectedly: {e}")
+        return GateResult.UNCERTAIN

@@ -8,8 +8,13 @@ class DocumentMetadata(BaseModel):
     document_type: str|None
     issuing_authority: str|None
     date: date| None
-    domain:Literal["labour"]
-class ChunkMetadata(DocumentMetadata,BaseModel):
+    jurisdictions: list[str] = []  # ["central"], ["karnataka"]
+    domain:Literal["family_womens_rights",
+                   "cyber_crime",
+                   "tenant_property",
+                   "consumer_protection",
+                   "labour_employment"]|None
+class ChunkMetadata(DocumentMetadata):
     chunk_type:str|None
     heading:str|None
     summary:str|None
@@ -17,5 +22,5 @@ class ChunkMetadata(DocumentMetadata,BaseModel):
 class LegalChunk(BaseModel):
     text:str|None
     embedding:list[float]
-    chunk_metadata:dict
+    chunk_metadata:ChunkMetadata
     

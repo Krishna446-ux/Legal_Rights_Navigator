@@ -1,7 +1,7 @@
 
 # idea is to filter the query
 from graph.nodes.validity_gate.reference_queries import IN_DOMAIN_QUERIES, OUT_OF_DOMAIN_QUERIES
-from graph.nodes.validity_gate.rules import GateResult
+from enums.GateResult import GateResult
 import json
 from services.local_embedding import get_embedding
 from pathlib import Path

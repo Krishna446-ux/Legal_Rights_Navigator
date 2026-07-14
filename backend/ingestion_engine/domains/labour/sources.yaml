@@ -3,5 +3,6 @@ sources:
     document_title: "THE CODE ON WAGES, 2019"
     document_type: "Act"
     issuing_authority: "Ministry of Law and Justice, Legislative Department"
+    jurisdictions: ["central"]
     date: 2019-01-01
-    domain: "labour"
+    domain: "labour_employment"

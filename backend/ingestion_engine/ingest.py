@@ -122,6 +122,7 @@ async def main():
                         document_title=d.get("document_title"),
                         document_type=d.get("document_type"),
                         issuing_authority=d.get("issuing_authority"),
+                        jurisdictions=d.get("jurisdictions"),
                         date=d.get("date"),
                         domain=d.get("domain"),
                     )
