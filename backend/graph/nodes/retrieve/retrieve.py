@@ -34,30 +34,3 @@ async def retrieve(state: FullGraphState):
         }
         
 
-import asyncio
-
-
-async def main():
-    state: FullGraphState = {
-        # Query updated to target the exact "Wages" definition and 50% cap rules in your text
-        "normalized_query": "How is the 50% allowance threshold calculated under the definition of wages in Section 2(y)?", # type: ignore
-        "domain": Domain.LABOUR,
-        "jurisdiction": ["central"], 
-        "document_type": None,
-    }
-
-    result = await retrieve(state)
-
-    print("Status:", result["retrieval_status"])
-
-    for chunk in result["retrieved_chunks"]:
-        print("\n--- CHUNK ---")
-        print(chunk.text[:300])
-        print(chunk.chunk_metadata)
-    print("Count:", len(result["retrieved_chunks"]))
-
-    for chunk in result["retrieved_chunks"]:
-        print(chunk.text[:200])
-        print(chunk.chunk_metadata)
-
-asyncio.run(main())

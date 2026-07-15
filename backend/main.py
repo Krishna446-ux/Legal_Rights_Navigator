@@ -1,5 +1,9 @@
 #remove these parts after development is done
+from contextlib import asynccontextmanager
+from graph.graph import LangGraph
 import os
+import uuid
+from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 ################################################
 from loguru import logger
@@ -9,14 +13,28 @@ from api.authRoute import router as auth_router
 from core.config import setting
 from middlewares.auth_middleware import auth_middleware
 
-app = FastAPI()
 router = APIRouter()
-app.include_router(auth_router)
 
 origins = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
 ]
+
+graph=LangGraph()
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Bug 7 fix: use async context manager to avoid blocking the event loop during startup
+    async with AsyncPostgresSaver.from_conn_string(setting.checkpoint_database_url) as checkpointer:
+        await checkpointer.setup()
+
+        graph.initialize(checkpointer)
+
+        yield
+
+app = FastAPI(lifespan=lifespan)
+
+app.include_router(auth_router)
 
 app.add_middleware(
     CORSMiddleware,
@@ -32,8 +50,21 @@ app.middleware("http")(auth_middleware)
 
 @app.get("/")
 async def root():
-    return {"message": "Hello World"}
+    return {"message": "Server Is Running"}
 
+# Fixed UUID used by the health-check route so the checkpointer can
+# accumulate messages across repeated hits to /graph_health.
+_HEALTH_CHECK_THREAD_ID = uuid.UUID("00000000-0000-0000-0000-000000000001")
+
+@app.get("/graph_health")
+async def graph_health():
+    return {
+        "state": await graph.ainvoke(
+            _HEALTH_CHECK_THREAD_ID,
+            "I do not remeber that",
+        )
+    }
+    
 @app.get("/me")
 async def get_user_info(request: Request):
     try:

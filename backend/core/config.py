@@ -6,6 +6,7 @@ class Settings(BaseSettings):
     google_client_secret:str
     google_redirect_uri:str
     database_url:str
+    checkpoint_database_url:str
     environment: str = "development"
     frontend_url:str
     jwt_secret_key:str

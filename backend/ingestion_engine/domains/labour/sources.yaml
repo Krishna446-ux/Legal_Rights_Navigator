@@ -6,3 +6,59 @@ sources:
     jurisdictions: ["central"]
     date: 2019-01-01
     domain: "labour_employment"
+
+  - url: "https://www.labour.gov.in/static/uploads/2025/07/682a44b5426bff2c1f4943ee1b2fd566.pdf"
+    document_title: "THE INDUSTRIAL RELATIONS CODE, 2020"
+    document_type: "Act"
+    issuing_authority: "Ministry of Law and Justice, Legislative Department"
+    jurisdictions: ["central"]
+    date: 2020-09-28
+    domain: "labour_employment"
+
+  - url: "https://www.labour.gov.in/static/uploads/2025/07/b0620548445580767b5c0d18c95c26f7.pdf"
+    document_title: "THE CODE ON SOCIAL SECURITY, 2020"
+    document_type: "Act"
+    issuing_authority: "Ministry of Law and Justice, Legislative Department"
+    jurisdictions: ["central"]
+    date: 2020-09-28
+    domain: "labour_employment"
+
+  - url: "https://www.labour.gov.in/static/uploads/2025/07/36fcfa5d8e6b9145e282bf7b950d6c47.pdf"
+    document_title: "THE OCCUPATIONAL SAFETY, HEALTH AND WORKING CONDITIONS CODE, 2020"
+    document_type: "Act"
+    issuing_authority: "Ministry of Law and Justice, Legislative Department"
+    jurisdictions: ["central"]
+    date: 2020-09-28
+    domain: "labour_employment"
+
+  - url: "https://www.indiacode.nic.in/bitstream/123456789/15239/1/sexual_harassment_act_2013.pdf"
+    document_title: "THE SEXUAL HARASSMENT OF WOMEN AT WORKPLACE (PREVENTION, PROHIBITION AND REDRESSAL) ACT, 2013"
+    document_type: "Act"
+    issuing_authority: "Ministry of Law and Justice, Legislative Department"
+    jurisdictions: ["central"]
+    date: 2013-04-22
+    domain: "labour_employment"
+
+  - url: "https://www.indiacode.nic.in/bitstream/123456789/1668/1/aA196152.pdf"
+    document_title: "THE APPRENTICES ACT, 1961"
+    document_type: "Act"
+    issuing_authority: "Ministry of Skill Development and Entrepreneurship"
+    jurisdictions: ["central"]
+    date: 1961-12-12
+    domain: "labour_employment"
+
+  - url: "https://www.indiacode.nic.in/bitstream/123456789/19582/1/the_child_and_adolescent_labour_(prohibition_and_regulation)_act,_1986_no._61_of_1986_date_23.12.1986.pdf"
+    document_title: "THE CHILD AND ADOLESCENT LABOUR (PROHIBITION AND REGULATION) ACT, 1986"
+    document_type: "Act"
+    issuing_authority: "Ministry of Law and Justice, Legislative Department"
+    jurisdictions: ["central"]
+    date: 1986-12-23
+    domain: "labour_employment"
+
+  - url: "https://www.indiacode.nic.in/bitstream/123456789/15997/1/the_bonded_labour_system_(abolition)_act,_1976.pdf"
+    document_title: "THE BONDED LABOUR SYSTEM (ABOLITION) ACT, 1976"
+    document_type: "Act"
+    issuing_authority: "Ministry of Law and Justice, Legislative Department"
+    jurisdictions: ["central"]
+    date: 1976-02-09
+    domain: "labour_employment"

@@ -9,8 +9,11 @@ async def run_validity_gate(state: FullGraphState):
     """Orchestrates Tier 1 -> Tier 2 -> (Tier 3 stub) validity checking.
     Returns a dict for use as LangGraph state update.
     """
-    query = state["query"]  # type: ignore
-    logger.info(f"Running validity gate for query='{query[:80]}...'")
+    # "query" is never pre-populated — the graph is invoked with only {"messages": [HumanMessage(...)]}
+    # Pull the raw text from the last human message so all three tiers work correctly.
+    messages = state.get("messages") or []
+    query: str = messages[-1].content if messages else ""
+    logger.info(f"Running validity gate for query='{query[:80]}...'")  
 
     try:
         # Tier 1 — fast regex/keyword filter
@@ -22,7 +25,7 @@ async def run_validity_gate(state: FullGraphState):
             return {"validity":{"validity_result": GateResult.REJECT, "gate_tier": 1, "similarity_score": None}}
 
         # Tier 2 — embedding similarity filter
-        tier2_result, similarity_score = apply_tier2_rules(query)
+        tier2_result, similarity_score = await apply_tier2_rules(query)
         logger.debug(f"Tier 2 result: {tier2_result}, similarity_score={similarity_score:.4f}")
 
         if tier2_result in (GateResult.PASS, GateResult.REJECT):
@@ -32,7 +35,13 @@ async def run_validity_gate(state: FullGraphState):
 
         # Falls through to Tier 3 LLM gate
         logger.info(f"Query uncertain after Tier 2, escalating to Tier 3 (score={similarity_score:.4f})")
-        return {"validity":{"validity_result": tier3_result["is_legal"], "gate_tier": 3, "similarity_score": tier3_result["is_legal_confidence"]}} # type: ignore
+        return {
+            "validity": {
+                "validity_result": GateResult.PASS if tier3_result.is_legal else GateResult.REJECT,          # Bug 9 fix: attribute access, not dict
+                "gate_tier": 3,
+                "similarity_score": tier3_result.is_legal_confidence,
+            }
+        }
 
     except Exception as e:
         logger.exception(f"Validity gate crashed unexpectedly: {e}")

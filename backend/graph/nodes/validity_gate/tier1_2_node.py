@@ -5,10 +5,10 @@ from loguru import logger
 #     PASS = "pass"
 #     REJECT = "reject"
 #     UNCERTAIN = "uncertain"
-def tier1_2_node(state:FullGraphState):
+async def tier1_2_node(state: FullGraphState):
     try:
-        result=run_validity_gate(state)
+        result = await run_validity_gate(state)
         return result
     except Exception as e:
-        logger.error("tier1_2 node is causing error,directing towards tier3",e)
+        logger.error(f"tier1_2 node is causing error, directing towards tier3: {e}")
     

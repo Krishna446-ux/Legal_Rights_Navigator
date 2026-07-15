@@ -15,49 +15,77 @@ class Tier3Response(BaseModel):
     needs_clarification:bool
     reasoning:str
 
-TIER3_GATE_PROMPT = """You are a legal query validator and domain classifier for an Indian legal assistant.
+TIER3_GATE_PROMPT = """You are a coarse intent filter for an Indian legal assistant.
 
-Your job has two parts:
-1. Decide if the user's query is asking about LEGAL RIGHTS, LEGAL PROCEDURES, or LEGAL GUIDANCE (under Indian law).
-2. If it is legal, classify it into exactly ONE of the supported domains below. If it doesn't clearly fit any, or you need more information to tell, say so — do not force-fit it.
+Your ONLY job is to decide: does this message belong in a legal conversation?
+You are NOT evaluating whether the user has provided enough information.
+You are NOT deciding if clarification or retrieval is needed.
+Those decisions are made by downstream nodes.
 
-Supported domains:
-- "labour_employment": salary/wage disputes, termination, retrenchment, PF/ESI/gratuity, workplace conditions, contracts of employment
-- "consumer_protection": defective goods/services, refunds, e-commerce disputes, deficiency in service, consumer complaints
-- "tenant_property": rent, eviction, security deposit, landlord-tenant disputes, property possession
-- "cyber_crime": online fraud, hacking, harassment online, data/privacy breaches, digital scams
-- "family_womens_rights": domestic violence, maintenance, divorce, dowry, workplace harassment (POSH), custody
-- "other_legal": clearly a legal question but outside the five domains above (e.g. criminal law, inheritance, taxation, contracts unrelated to employment)
+Think of yourself as a broad gate, not a legal analyst.
+
+--- PASS if the user is: ---
+- Describing any legal problem, even vaguely (fired, evicted, scammed, harassed, arrested).
+- Asking about rights, obligations, remedies, compensation, contracts, notices, FIRs, court orders.
+- Mentioning an employer, landlord, police, court, government authority, or consumer complaint.
+- Asking "what should I do?", "is this legal?", "can they do this?", "what are my rights?".
+- Providing a short follow-up answer to an earlier question in the conversation (e.g., "Yes", "No", "Karnataka", "2 years", "Poor performance", "Private company", "120 employees", "Last month").
+  → Check if earlier messages suggest an ongoing legal discussion. If yes, always PASS.
+- Describing a situation that COULD escalate into a legal matter, even if it hasn't yet.
+
+Domains that qualify (any of these is enough to PASS):
+employment, wages, termination, workplace, landlord, rent, eviction, deposit, police, FIR,
+consumer goods/services, refund, court, property, family, divorce, maintenance, domestic violence,
+cyber fraud, online harassment, tax, government, constitutional rights, criminal matter.
+
+--- REJECT only if the message is clearly ALL of the following: ---
+- Has no connection to law, rights, government, or a dispute.
+- Is obviously casual conversation (greetings, jokes, recipes, sports, weather).
+- Is random keyboard input, spam, or completely unintelligible.
+
+Examples of messages to PASS:
+- "I was fired" → is_legal=true, labour_employment
+- "My landlord isn't returning my deposit" → is_legal=true, tenant_property
+- "Police took my phone" → is_legal=true, other_legal
+- "I got a notice" → is_legal=true (vague, but plausibly legal — PASS)
+- "My salary wasn't paid" → is_legal=true, labour_employment
+- "Karnataka" → is_legal=true (short follow-up answer in an ongoing legal conversation — PASS)
+- "2 years" → is_legal=true (same as above — PASS)
+- "Poor performance" → is_legal=true (same — PASS)
+- "My boss is being unfair" → is_legal=true (vague but legal — downstream will clarify)
+- "What should I do?" → is_legal=true
+
+Examples of messages to REJECT:
+- "What's the weather today?" → is_legal=false
+- "Tell me a joke" → is_legal=false
+- "How do I cook biryani?" → is_legal=false
+- "asdfghjkl" → is_legal=false
+
+WHEN IN DOUBT, PASS. It is far better to let a borderline message through than to block a genuine user in distress.
 
 Query from user: {query}
 
-Examples of LEGAL queries:
-- "My employer hasn't paid my salary" -> labour_employment
-- "Can my landlord evict me without notice?" -> tenant_property
-- "How do I file a consumer complaint?" -> consumer_protection
-- "What are my rights if I'm wrongly accused online?" -> cyber_crime
-- "My husband hasn't paid maintenance in months" -> family_womens_rights
-- "Someone is threatening to leak my photos" -> cyber_crime
-- "My boss is being unfair to me" -> labour_employment, but needs_clarification=true (too vague to act on)
-
-Examples of NON-LEGAL queries:
-- "What's the weather today?"
-- "Tell me a joke"
-- "How do I cook biryani?"
-- "Who won the cricket match?"
+Supported domains:
+- "labour_employment": salary, termination, PF/ESI/gratuity, workplace, retrenchment
+- "consumer_protection": defective goods/services, refunds, e-commerce, consumer complaints
+- "tenant_property": rent, eviction, security deposit, landlord-tenant disputes
+- "cyber_crime": online fraud, hacking, harassment, data/privacy breaches
+- "family_womens_rights": domestic violence, maintenance, divorce, dowry, POSH, custody
+- "other_legal": criminal, property, tax, constitutional, government — anything clearly legal but outside the five above
 
 Rules:
 - If is_legal is false, domain must be null and needs_clarification must be false.
-- If the query is legal but doesn't fit any of the five supported domains, set domain to "other_legal".
-- If the query is legal and domain is genuinely ambiguous between two supported domains, or too vague to classify, set needs_clarification to true and pick your best-guess domain anyway (do not set domain to null when is_legal is true).
-- confidence for "is_legal" reflects certainty it's a legal query at all.
-- confidence for "domain" reflects certainty in the specific domain choice, independent of is_legal confidence.
+- If is_legal is true but domain is unclear, set domain to "other_legal" rather than null.
+- needs_clarification should almost always be false — the gate does not ask for clarification.
 
-Respond with ONLY this JSON format, nothing else, no markdown fences:
+Respond with ONLY this JSON object, nothing else, no markdown fences, no extra keys:
 {{
-  "is_legal": pass or reject,
+  "is_legal": true or false,
   "is_legal_confidence": 0.0 to 1.0,
-  "reasoning": "one sentence explanation covering both the legality and domain decision"
+  "domain": "labour_employment" | "consumer_protection" | "tenant_property" | "cyber_crime" | "family_womens_rights" | "other_legal" | null,
+  "domain_confidence": 0.0 to 1.0,
+  "needs_clarification": false,
+  "reasoning": "one sentence explanation"
 }}"""
 
 
@@ -68,22 +96,36 @@ async def tier3_llm_gate(state: FullGraphState):
     Input: user query string
     Output: {is_legal: bool, confidence: float, reasoning: str}
     """
-    query = state["query"]  # type: ignore
+    messages = state.get("messages") or []
+    query: str = messages[-1].content if messages else ""
     logger.info(f"Tier 3 LLM gate invoked for query='{query[:80]}'")
 
-    try:
-        llm = llm_manager.groq.with_fallbacks([llm_manager.gemini, llm_manager.mistral, llm_manager.openrouter])
-        prompt = ChatPromptTemplate.from_template(TIER3_GATE_PROMPT)
-        parser = PydanticOutputParser(pydantic_object=Tier3Response)
-        chain = prompt | llm | parser
+    # Explicit provider loop — same reason as conversation_understanding.py:
+    # with_fallbacks() on an async chain doesn't reliably intercept 429s.
+    _providers = [
+        ("groq",       llm_manager.groq),
+        ("gemini",     llm_manager.gemini),
+        ("mistral",    llm_manager.mistral),
+        ("openrouter", llm_manager.openrouter),
+    ]
+    result = None
+    for provider_name, model in _providers:
+        try:
+            prompt = ChatPromptTemplate.from_template(TIER3_GATE_PROMPT)
+            parser = PydanticOutputParser(pydantic_object=Tier3Response)
+            chain = prompt | model | parser
+            result = await chain.ainvoke({"query": query})
+            logger.info(
+                f"Tier 3 result via '{provider_name}': is_legal={result.is_legal}, "
+                f"confidence={result.is_legal_confidence:.2f}, reasoning='{result.reasoning}'"
+            )
+            break
+        except Exception as e:
+            logger.warning(
+                f"Tier 3 provider '{provider_name}' failed ({type(e).__name__}): {e} — trying next provider"
+            )
 
-        result = await chain.ainvoke({"query": query})
-        logger.info(
-            f"Tier 3 result: is_legal={result.is_legal}, "
-            f"confidence={result.is_legal_confidence:.2f}, reasoning='{result.reasoning}'"
-        )
-        return result
+    if result is None:
+        raise RuntimeError(f"Tier 3 LLM gate failed: all providers exhausted for query='{query[:80]}'")
 
-    except Exception as e:
-        logger.exception(f"Tier 3 LLM gate failed for query='{query[:80]}': {e}")
-        raise RuntimeError(f"Tier 3 LLM gate failed: {e}") from e
+    return result

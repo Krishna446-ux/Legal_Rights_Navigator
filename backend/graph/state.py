@@ -3,6 +3,7 @@ from typing import Annotated, Optional,Literal,TypedDict
 
 from langgraph.graph import add_messages
 from pydantic import BaseModel
+from enums.AgentAction import AgentAction
 from enums.RetrievalStatus import RetrievalStatus
 from enums.Query_Type import QueryType
 
@@ -42,17 +43,19 @@ class FullGraphState(TypedDict, total=False):
     # Validity
     validity: Validity_Gate_Type | None
 
-    # Classification
-    query_type: QueryType | None
-    needs_clarification: bool
-    clarification_question:str
+    # Decision Node
+    next_action: AgentAction
+    clarification_questions: list[str]
+    refined_query: str
+    final_answer: str
+    working_memory: str
+    clarification_count:int
     
     # Retrieval
     retrieved_chunks: list[RetrievedChunk]
     retrieval_status: RetrievalStatus
-    
+    retrieval_count: int
     # Tool outputs
     tool_results: dict
-
     # Final answer
     response: str | None

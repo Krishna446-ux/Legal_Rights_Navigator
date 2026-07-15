@@ -7,3 +7,4 @@ class Domain(str,Enum):
     TENANT="tenant_property"
     CYBER="cyber_crime"
     FAMILY="family_womens_rights"
+    OTHER_LEGAL="other_legal"

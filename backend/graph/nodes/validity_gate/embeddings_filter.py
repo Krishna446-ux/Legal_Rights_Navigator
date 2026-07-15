@@ -1,8 +1,9 @@
 
 # idea is to filter the query
-from graph.nodes.validity_gate.reference_queries import IN_DOMAIN_QUERIES, OUT_OF_DOMAIN_QUERIES
+import asyncio
 from enums.GateResult import GateResult
 import json
+import time
 from services.local_embedding import get_embedding
 from pathlib import Path
 from core.config import setting
@@ -16,10 +17,6 @@ PASS_THRESHOLD = 0.65
 REJECT_THRESHOLD = 0.35
 
 try:
-    client = InferenceClient(
-        provider="hf-inference",
-        api_key=setting.HF_TOKEN,
-    )
     logger.info("HuggingFace InferenceClient initialized successfully")
 except Exception as e:
     logger.exception(f"Failed to initialize HuggingFace InferenceClient: {e}")
@@ -38,17 +35,18 @@ def cosine_similarity(v1: ndarray, v2: ndarray):
     return dot_product / (norm_v1 * norm_v2)
 
 
-def apply_tier2_rules(query: str) -> tuple[GateResult, float]:
+IN_DOMAIN_EMBEDDING = Path('IN_DOMAIN_EMBEDDINGS.json')
+OUT_DOMAIN_EMBEDDING = Path('OUT_DOMAIN_EMBEDDINGS.json')
+async def apply_tier2_rules(query: str) -> tuple[GateResult, float]:
     logger.debug(f"Tier 2: computing embedding similarity for query='{query[:80]}'")
     try:
-        embedding = client.feature_extraction(
-            query,
-            model="BAAI/bge-m3",
-        )
+        loop = asyncio.get_running_loop()
+        # SentenceTransformer.encode is CPU-bound — run in thread pool to avoid blocking event loop
+        embedding = await loop.run_in_executor(None, get_embedding, query)
         query_embedding = np.array(embedding)
-
-        max_in = max(cosine_similarity(query_embedding, item.embedding) for item in IN_DOMAIN)
-        max_out = max(cosine_similarity(query_embedding, item.embedding) for item in OUT_DOMAIN)
+        
+        max_in = max(cosine_similarity(query_embedding, item["embedding"]) for item in IN_DOMAIN)
+        max_out = max(cosine_similarity(query_embedding, item["embedding"]) for item in OUT_DOMAIN)
 
         logger.debug(f"Tier 2 scores: max_in={max_in:.4f}, max_out={max_out:.4f}")
 
@@ -67,36 +65,9 @@ def apply_tier2_rules(query: str) -> tuple[GateResult, float]:
         return (GateResult.UNCERTAIN, 0.0)
 
 
-IN_DOMAIN_EMBEDDING = Path('IN_DOMAIN_EMBEDDINGS.json')
-OUT_DOMAIN_EMBEDDING = Path('OUT_DOMAIN_EMBEDDINGS.json')
+async def main():
+    print(await apply_tier2_rules("Seciton 43"))
+    
+if __name__=="__main__":
+    asyncio.run(main())
 
-
-def main():
-    logger.info("Generating and saving domain embeddings")
-    try:
-        in_domain_vecs = get_embedding(IN_DOMAIN_QUERIES)
-        out_domain_vecs = get_embedding(OUT_OF_DOMAIN_QUERIES)
-
-        data = [
-            {"text": text, "embedding": embedding}
-            for text, embedding in zip(IN_DOMAIN_QUERIES, in_domain_vecs)
-        ]
-        with IN_DOMAIN_EMBEDDING.open("w", encoding="utf-8") as f:
-            json.dump(data, f, indent=2)
-        logger.info(f"IN_DOMAIN embeddings saved to {IN_DOMAIN_EMBEDDING}")
-
-        data = [
-            {"text": text, "embedding": embedding}
-            for text, embedding in zip(OUT_OF_DOMAIN_QUERIES, out_domain_vecs)
-        ]
-        with OUT_DOMAIN_EMBEDDING.open("w", encoding="utf-8") as f:
-            json.dump(data, f, indent=2)
-        logger.info(f"OUT_DOMAIN embeddings saved to {OUT_DOMAIN_EMBEDDING}")
-
-    except Exception as e:
-        logger.exception(f"Failed to generate/save embeddings: {e}")
-        raise
-
-
-if __name__ == "__main__":
-    main()
