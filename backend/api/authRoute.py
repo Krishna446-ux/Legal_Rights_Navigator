@@ -35,7 +35,8 @@ async def google_login() -> RedirectResponse:
         httponly=True,  # Blocks client-side scripts (like JavaScript) from accessing the cookie.
         secure=setting.environment != "development",      # Use False only for local HTTP development
             max_age=60 * 60,
-            samesite="lax"
+            samesite="lax",
+            path="/"
         )
         response.set_cookie(
             key="code_verifier",
@@ -43,7 +44,8 @@ async def google_login() -> RedirectResponse:
         httponly=True,  # Blocks client-side scripts (like JavaScript) from accessing the cookie.
         secure=setting.environment != "development",      # Use False only for local HTTP development
             max_age=60 * 60,
-            samesite="lax"
+            samesite="lax",
+            path="/"
         )
         logger.debug(f"OAuth redirect set with state={state}")
         return response
@@ -119,7 +121,8 @@ async def google_callback(
             httponly=True,  # Blocks client-side scripts (like JavaScript) from accessing the cookie.
             secure=setting.environment != "development",      # Use False only for local HTTP development
             max_age=7 * 24 * 60 * 60,
-            samesite="lax"
+            samesite="lax",
+            path="/"
         )
         return response
 

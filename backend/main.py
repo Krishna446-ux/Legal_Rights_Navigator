@@ -19,7 +19,8 @@ router = APIRouter()
 origins = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
-]
+    setting.frontend_url
+] + setting.cors_origins
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Bug 7 fix: use async context manager to avoid blocking the event loop during startup
