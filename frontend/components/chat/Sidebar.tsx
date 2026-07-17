@@ -62,6 +62,7 @@ import { Plus, Search, Settings, ChevronLeft, Clock, Scale, LogOut, Trash2, Edit
 import type { Conversation } from '../../lib/types';
 import { AuthContext } from '@/lib/auth-context';
 import { LogoIcon } from '../shared/LogoIcon';
+import { BACKEND_URL } from '@/lib/config';
 
 interface Props {
   conversations: Conversation[];
@@ -301,7 +302,7 @@ export default function Sidebar({
           {/* TODO: Sign-out should call POST /api/auth/signout and clear the auth token */}
           <button
             onClick={() => {
-              fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/logout`, {
+              fetch(`${BACKEND_URL}/api/logout`, {
                 "method": "POST",
                 "credentials": "include",
               })

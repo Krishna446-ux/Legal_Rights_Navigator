@@ -53,7 +53,7 @@ interface Props {
   resetKey?: number;
 }
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL ?? 'http://127.0.0.1:8000';
+import { BACKEND_URL } from '@/lib/config';
 
 // Controls how fast the simulated typing animation runs.
 // Lower = faster. 12ms feels natural; increase to 25ms for slower typing.

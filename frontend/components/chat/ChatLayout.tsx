@@ -32,6 +32,7 @@ import logger from '@/lib/pino';
 import Toast from '../shared/Toast';
 
 import SettingsModal, { FontSize } from '../shared/SettingsModal';
+import { BACKEND_URL } from '@/lib/config';
 
 interface Props {
   onNavigate: (view: View) => void;
@@ -76,7 +77,7 @@ export default function ChatLayout({ onNavigate, darkMode, onToggleDark }: Props
     async function loadConversation() {
       try {
         const res = await fetch(
-          `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/conversation`,
+          `${BACKEND_URL}/api/conversation`,
           {
             credentials: "include",
           }
@@ -162,7 +163,7 @@ export default function ChatLayout({ onNavigate, darkMode, onToggleDark }: Props
       }
 
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/conversation/${id}`, { 
+        const res = await fetch(`${BACKEND_URL}/api/conversation/${id}`, { 
           method: "DELETE", 
           credentials: "include", 
         });
@@ -195,7 +196,7 @@ export default function ChatLayout({ onNavigate, darkMode, onToggleDark }: Props
     setConversations(prev => prev.map((c) => c.id === id ? { ...c, title: newTitle } : c));
 
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/conversation/${id}/${newTitle}`, { 
+      const res = await fetch(`${BACKEND_URL}/api/conversation/${id}/${newTitle}`, { 
         method: "PUT", 
         credentials: "include", 
       });

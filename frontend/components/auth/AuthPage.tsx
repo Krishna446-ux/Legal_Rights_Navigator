@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { AuthContext } from '@/lib/auth-context';
 import { useTheme } from '../../lib/theme-context';
 import { LogoIcon } from '../shared/LogoIcon';
+import { BACKEND_URL } from '@/lib/config';
 
 function GoogleIcon() {
   return (
@@ -35,7 +36,7 @@ export default function AuthPage() {
       router.push("/chat")
       return
     }
-    window.location.href = `${process.env.NEXT_PUBLIC_BACKEND_URL}/auth`
+    window.location.href = `${BACKEND_URL}/auth`
   }
   return (
     <div

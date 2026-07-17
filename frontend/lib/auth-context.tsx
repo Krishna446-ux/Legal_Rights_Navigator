@@ -2,6 +2,7 @@
 import { createContext, useState, useEffect } from "react"
 import logger from "./pino";
 import { authState } from "../types/authState";
+import { BACKEND_URL } from "./config";
 export type AuthContextValue = authState & {
     logout: () => void;
 };
@@ -18,7 +19,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         logger.info("Fetching user info...");
         async function loadUser() {
             try {
-                const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/me`, { credentials: "include", });
+                const res = await fetch(`${BACKEND_URL}/me`, { credentials: "include", });
                 if (!res.ok) {
                     console.log("Error fetching user info: %s", res.status);
                     setAuthState({
