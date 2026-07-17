@@ -32,19 +32,19 @@ async def google_login() -> RedirectResponse:
         response.set_cookie(
             key="oauth_state",
             value=state,
-        httponly=True,  # Blocks client-side scripts (like JavaScript) from accessing the cookie.
-        secure=setting.environment != "development",      # Use False only for local HTTP development
+            httponly=True,  # Blocks client-side scripts (like JavaScript) from accessing the cookie.
+            secure=setting.environment != "development",    # Required for cross-site cookies
             max_age=60 * 60,
-            samesite="lax",
+            samesite="none", # Allow cross-site usage
             path="/"
         )
         response.set_cookie(
             key="code_verifier",
             value=flow.code_verifier,
-        httponly=True,  # Blocks client-side scripts (like JavaScript) from accessing the cookie.
-        secure=setting.environment != "development",      # Use False only for local HTTP development
+            httponly=True,  # Blocks client-side scripts (like JavaScript) from accessing the cookie.
+            secure=setting.environment != "development",    # Required for cross-site cookies
             max_age=60 * 60,
-            samesite="lax",
+            samesite="none", # Allow cross-site usage
             path="/"
         )
         logger.debug(f"OAuth redirect set with state={state}")
@@ -119,9 +119,9 @@ async def google_callback(
             key="jwt_token",
             value=jwt_token,
             httponly=True,  # Blocks client-side scripts (like JavaScript) from accessing the cookie.
-            secure=setting.environment != "development",      # Use False only for local HTTP development
+            secure=setting.environment != "development",    # Required for cross-site cookies
             max_age=7 * 24 * 60 * 60,
-            samesite="lax",
+            samesite="none", # Allow cross-site usage
             path="/"
         )
         return response
