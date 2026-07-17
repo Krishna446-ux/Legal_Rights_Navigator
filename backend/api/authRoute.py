@@ -81,8 +81,6 @@ async def google_callback(
                 status_code=500,
             )
         #requires the state and code_verifier used when asking for the authorization code, to be passed again when exchanging the code for tokens
-        flow = create_google_flow(prev_state,code_verifier=prev_code_verifier)
-
         flow = create_google_flow(prev_state, code_verifier=prev_code_verifier)
         flow.fetch_token(authorization_response=str(request.url))
         credentials = flow.credentials
