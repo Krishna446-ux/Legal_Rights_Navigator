@@ -1,0 +1,48 @@
+sources:
+  - url: "https://www.indiacode.nic.in/bitstream/123456789/15304/1/domviolence.pdf"
+    document_title: "THE PROTECTION OF WOMEN FROM DOMESTIC VIOLENCE ACT, 2005"
+    document_type: "Act"
+    issuing_authority: "Ministry of Law and Justice, Legislative Department"
+    jurisdictions: ["central"]
+    date: 2005-09-13
+    domain: "family_womens_rights"
+
+  - url: "https://www.indiacode.nic.in/bitstream/123456789/5402/1/a1961-28.pdf"
+    document_title: "THE DOWRY PROHIBITION ACT, 1961"
+    document_type: "Act"
+    issuing_authority: "Ministry of Law and Justice, Legislative Department"
+    jurisdictions: ["central"]
+    date: 1961-05-20
+    domain: "family_womens_rights"
+
+  - url: "https://www.indiacode.nic.in/bitstream/123456789/2104/1/A2013-14.pdf"
+    document_title: "THE SEXUAL HARASSMENT OF WOMEN AT WORKPLACE (PREVENTION, PROHIBITION AND REDRESSAL) ACT, 2013"
+    document_type: "Act"
+    issuing_authority: "Ministry of Law and Justice, Legislative Department"
+    jurisdictions: ["central"]
+    date: 2013-04-22
+    domain: "family_womens_rights"
+
+  - url: "https://www.indiacode.nic.in/bitstream/123456789/11564/1/a2019-20.pdf"
+    document_title: "THE MUSLIM WOMEN (PROTECTION OF RIGHTS ON MARRIAGE) ACT, 2019"
+    document_type: "Act"
+    issuing_authority: "Ministry of Law and Justice, Legislative Department"
+    jurisdictions: ["central"]
+    date: 2019-07-31
+    domain: "family_womens_rights"
+
+  - url: "https://www.indiacode.nic.in/handle/123456789/1560"
+    document_title: "THE HINDU MARRIAGE ACT, 1955"
+    document_type: "Act"
+    issuing_authority: "Ministry of Law and Justice, Legislative Department"
+    jurisdictions: ["central"]
+    date: 1955-05-18
+    domain: "family_womens_rights"
+
+  - url: "https://www.indiacode.nic.in/bitstream/123456789/20062/1/a2023-45.pdf"
+    document_title: "THE BHARATIYA NYAYA SANHITA, 2023"
+    document_type: "Act"
+    issuing_authority: "Ministry of Law and Justice, Legislative Department"
+    jurisdictions: ["central"]
+    date: 2023-12-25
+    domain: "family_womens_rights"

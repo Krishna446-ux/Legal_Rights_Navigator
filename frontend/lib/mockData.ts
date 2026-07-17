@@ -1,14 +1,45 @@
-// Mock data for UI development.
-// TODO: Replace all mock data with real API responses from the backend.
+// ============================================================
+// mockData.ts — Placeholder data for UI development
+//
+// ⚠️  THIS FILE IS TEMPORARY — ALL EXPORTS MUST BE REPLACED WITH REAL API CALLS
+//
+// WHAT NEEDS TO BE DONE:
+//
+// 1. mockConversations → GET /api/conversations
+//    - Used by: ChatLayout.tsx (passed to Sidebar as props)
+//    - Replace useState(mockConversations) with a useEffect API fetch.
+//    - The API should return paginated conversations sorted by updatedAt DESC.
+//
+// 2. mockCitations → Backend graph state["retrieved_chunks"]
+//    - Used by: ChatArea.tsx (attached to assistant messages after streaming ends)
+//    - Real citations come from the backend LangGraph state after retrieval.
+//    - Parse the citations from the final SSE event payload.
+//    - Map the backend's chunk format to the `Citation` interface in types.ts.
+//
+// 3. mockLegalSources → Backend graph state (not currently used in any component)
+//    - This was used by the (now removed) right-side context panel.
+//    - Either wire to the backend or delete this export.
+//
+// 4. mockInitialMessages → GET /api/conversations/{id}/messages
+//    - Not currently used in ChatArea (the area starts empty on mount).
+//    - When conversation history loading is implemented, fetch real messages here.
+//    - The backend stores message history with role, content, citations, and timestamps.
+//
+// DELETION CHECKLIST — remove each import one by one as you wire up the real API:
+//   [ ] mockConversations  — removed from ChatLayout.tsx
+//   [ ] mockCitations      — removed from ChatArea.tsx
+//   [ ] mockLegalSources   — already unused, safe to delete
+//   [ ] mockInitialMessages — not yet used, safe to delete
+// ============================================================
+
 import type {
   Conversation,
   Message,
   Citation,
   LegalSource,
-  ClarificationQuestion,
 } from './types';
 
-// TODO: Replace with GET /api/conversations
+// TODO: Remove — replace with GET /api/conversations
 export const mockConversations: Conversation[] = [
   {
     id: '1',
@@ -54,7 +85,8 @@ export const mockConversations: Conversation[] = [
   },
 ];
 
-// TODO: Replace with citations returned from backend graph state["retrieved_chunks"]
+// TODO: Remove — replace with real citations from backend graph state["retrieved_chunks"]
+// Backend chunk format needs to be mapped to the Citation interface.
 export const mockCitations: Citation[] = [
   {
     id: 'c1',
@@ -94,7 +126,8 @@ export const mockCitations: Citation[] = [
   },
 ];
 
-// TODO: Replace with sources from backend graph state
+// TODO: This export is currently not used in any component — safe to delete
+// or wire up when a legal sources panel is re-added to the UI.
 export const mockLegalSources: LegalSource[] = [
   {
     id: 's1',
@@ -122,36 +155,11 @@ export const mockLegalSources: LegalSource[] = [
   },
 ];
 
-// TODO: Replace with clarification questions from backend graph state["clarification_questions"]
-export const mockClarificationQuestions: ClarificationQuestion[] = [
-  { id: 'q1', question: 'When did your employment end?', type: 'date' },
-  {
-    id: 'q2',
-    question: 'How long did you work at this employer?',
-    type: 'dropdown',
-    options: [
-      'Less than 1 year',
-      '1–2 years',
-      '3–5 years',
-      '5–10 years',
-      'More than 10 years',
-    ],
-  },
-  {
-    id: 'q3',
-    question: 'Which state were you employed in?',
-    type: 'multiple-choice',
-    options: ['California', 'New York', 'Texas', 'Florida', 'Other'],
-  },
-  {
-    id: 'q4',
-    question: 'Were you given a reason for your termination?',
-    type: 'multiple-choice',
-    options: ['Yes, a verbal reason', 'Yes, in writing', 'No reason given', "I'm not sure"],
-  },
-];
-
-// TODO: Replace with messages loaded from backend conversation history
+// TODO: Remove — replace with GET /api/conversations/{id}/messages
+// Not currently loaded anywhere (ChatArea starts with an empty messages array).
+// When conversation history loading is implemented:
+//   - ChatArea useEffect should call this endpoint when conversationId changes.
+//   - The response shape should match the Message interface.
 export const mockInitialMessages: Message[] = [
   {
     id: 'm1',

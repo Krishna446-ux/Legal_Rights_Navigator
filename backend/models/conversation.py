@@ -24,66 +24,33 @@ class Conversation(Base):
         primary_key=True,
         default=uuid.uuid4,
     )
-
     user_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
     )
-
+    # domain is NOT NULL in the DB — supply a Python-side default so SQLAlchemy
+    # always includes it in the INSERT statement (server_default only works when
+    # the Postgres column itself has a DEFAULT clause, which it does not here).
     domain: Mapped[str] = mapped_column(
-        String,
-        nullable=False,
-    )
-
-    title: Mapped[str | None] = mapped_column(
         Text,
-        nullable=True,
-    )
-
-    extracted_facts: Mapped[dict] = mapped_column(
-        JSONB,
-        server_default="{}",
         nullable=False,
+        default="",
     )
-
-    history_summary: Mapped[str] = mapped_column(
+    title: Mapped[str] = mapped_column(
         Text,
-        server_default="",
         nullable=False,
+        default="Untitled Conversation",
+        server_default="Untitled Conversation",
     )
-
-    message_count: Mapped[int] = mapped_column(
-        Integer,
-        server_default="0",
-        nullable=False,
-    )
-
-    is_active: Mapped[bool] = mapped_column(
-        Boolean,
-        server_default="true",
-        nullable=False,
-    )
-
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),
         nullable=False,
     )
-
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),
         onupdate=func.now(),
         nullable=False,
-    )
-
-    user: Mapped["User"] = relationship(
-        "User",
-        back_populates="conversations",
-    )
-    messages: Mapped[list["Message"]] = relationship(
-    "Message",
-    back_populates="conversation",
-    cascade="all, delete-orphan",
     )

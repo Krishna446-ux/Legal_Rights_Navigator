@@ -1,26 +1,29 @@
-'use client';
+import React from 'react';
 
 interface Props {
-  confidence: number;
-  size?: 'sm' | 'md';
+  confidence: number
+  size?: 'sm' | 'md'
 }
 
 export default function ConfidenceBadge({ confidence, size = 'sm' }: Props) {
-  const pct = Math.round(confidence * 100);
-  const color =
-    pct >= 85 ? '#16a34a' : pct >= 65 ? '#d97706' : '#dc2626';
-  const textSize = size === 'md' ? 'text-xs' : 'text-[10px]';
+  const pct = Math.round(confidence * 100)
+  // use CSS variables that adapt to dark mode
+  const color = pct >= 85 ? '#22c55e' : pct >= 65 ? '#f59e0b' : '#ef4444'
+  const bg = pct >= 85 ? 'color-mix(in srgb, #22c55e 15%, transparent)' : pct >= 65 ? 'color-mix(in srgb, #f59e0b 15%, transparent)' : 'color-mix(in srgb, #ef4444 15%, transparent)'
+  const label = pct >= 85 ? 'High' : pct >= 65 ? 'Medium' : 'Low'
+
+  const sz = size === 'sm' ? 'text-[10px] px-1.5 py-0.5 gap-1' : 'text-xs px-2 py-1 gap-1.5'
 
   return (
     <span
-      className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full font-mono font-medium ${textSize}`}
-      style={{ backgroundColor: `${color}18`, color }}
+      className={`inline-flex items-center font-mono font-medium rounded ${sz}`}
+      style={{ color, backgroundColor: bg }}
     >
       <span
-        className="w-1.5 h-1.5 rounded-full flex-shrink-0"
-        style={{ backgroundColor: color }}
+        className="rounded-full flex-shrink-0"
+        style={{ width: size === 'sm' ? 5 : 6, height: size === 'sm' ? 5 : 6, backgroundColor: color }}
       />
-      {pct}%
+      {pct}% {label}
     </span>
-  );
+  )
 }

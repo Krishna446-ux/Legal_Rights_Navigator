@@ -1,8 +1,13 @@
 'use client';
 
-import { Scale, Search, Shield, FileText, ChevronRight, CheckCircle, Star, ArrowRight } from 'lucide-react';
+import { Scale, Search, Shield, FileText, ChevronRight, CheckCircle, Star, ArrowRight, Moon, Sun } from 'lucide-react';
 import type { View } from '../../lib/types';
 import { useRouter } from 'next/navigation';
+import { AuthContext } from '@/lib/auth-context';
+import { useContext, useState } from 'react';
+import { authState } from '@/types/authState';
+import { useTheme } from '../../lib/theme-context';
+import { LogoIcon } from '../shared/LogoIcon';
 
 const features = [
   {
@@ -54,7 +59,10 @@ const faqs = [
 
 export default function LandingPage() {
   const router = useRouter();
-  const isAuthenticated = false; // Mocked for now
+  const { darkMode, toggleTheme } = useTheme();
+  const state: authState | null = useContext(AuthContext)
+  const isAuthenticated = !(!state) && state.loading === false &&
+    Object.keys(state.profile).length > 0
 
   const handleNavigate = (view: View) => {
     if (view === 'login') router.push('/login');
@@ -68,8 +76,9 @@ export default function LandingPage() {
   };
 
   return (
-    <div style={{ backgroundColor: 'var(--background)', color: 'var(--foreground)', fontFamily: 'var(--font-sans)', minHeight: '100vh' }}>
-      {/* Nav */}
+    <div>
+      <div style={{ backgroundColor: 'var(--background)', color: 'var(--foreground)', fontFamily: 'var(--font-sans)', minHeight: '100vh' }}>
+        {/* Nav */}
       <nav
         className="sticky top-0 z-50 px-6 py-3.5 flex items-center justify-between"
         style={{
@@ -79,22 +88,21 @@ export default function LandingPage() {
         }}
       >
         <div className="flex items-center gap-2">
-          <div
-            className="w-7 h-7 rounded-lg flex items-center justify-center text-white text-[10px] font-bold"
-            style={{ backgroundColor: 'var(--primary)', fontFamily: 'var(--font-display)' }}
-          >
-            LN
-          </div>
+          <LogoIcon size={28} darkMode={darkMode} />
           <span className="text-sm font-bold" style={{ fontFamily: 'var(--font-display)', color: 'var(--foreground)' }}>
             Legal Navigator
           </span>
         </div>
-        <div className="hidden md:flex items-center gap-6 text-sm" style={{ color: 'var(--muted-foreground)' }}>
-          <a href="#features" className="hover:opacity-80 transition-opacity">Features</a>
-          <a href="#how-it-works" className="hover:opacity-80 transition-opacity">How it Works</a>
-          <a href="#faq" className="hover:opacity-80 transition-opacity">FAQ</a>
-        </div>
+
         <div className="flex items-center gap-2">
+          <button
+            onClick={toggleTheme}
+            className="p-2 mr-2 rounded-lg transition-colors hover:opacity-80"
+            style={{ color: 'var(--muted-foreground)' }}
+            title="Toggle theme"
+          >
+            {darkMode ? <Sun size={18} /> : <Moon size={18} />}
+          </button>
           {!isAuthenticated ? (
             <>
               <button
@@ -106,7 +114,7 @@ export default function LandingPage() {
               </button>
               <button
                 onClick={() => handleNavigate('chat')}
-                className="px-4 py-1.5 text-sm font-semibold rounded-lg transition-all hover:opacity-90"
+                className="px-4 py-1.5 text-sm font-semibold rounded-lg transition-[opacity,transform] hover:opacity-90"
                 style={{
                   backgroundColor: 'var(--primary)',
                   color: 'var(--primary-foreground)',
@@ -119,7 +127,7 @@ export default function LandingPage() {
           ) : (
             <button
               onClick={() => handleNavigate('chat')}
-              className="px-4 py-1.5 text-sm font-semibold rounded-lg transition-all hover:opacity-90"
+              className="px-4 py-1.5 text-sm font-semibold rounded-lg transition-[opacity,transform] hover:opacity-90"
               style={{
                 backgroundColor: 'var(--primary)',
                 color: 'var(--primary-foreground)',
@@ -134,18 +142,6 @@ export default function LandingPage() {
 
       {/* Hero */}
       <section className="px-6 pt-20 pb-16 max-w-4xl mx-auto text-center">
-        <div
-          className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium mb-8"
-          style={{
-            border: '1px solid color-mix(in srgb, var(--primary) 30%, transparent)',
-            backgroundColor: 'color-mix(in srgb, var(--primary) 6%, transparent)',
-            color: 'var(--primary)',
-            fontFamily: 'var(--font-mono)',
-          }}
-        >
-          <Star size={10} fill="currentColor" />
-          Statute-grounded · Source-cited · Free to start
-        </div>
         <h1
           className="text-5xl md:text-6xl font-bold leading-tight mb-6"
           style={{ fontFamily: 'var(--font-display)', color: 'var(--foreground)', letterSpacing: '-0.02em' }}
@@ -163,7 +159,7 @@ export default function LandingPage() {
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
           <button
             onClick={() => handleNavigate('chat')}
-            className="flex items-center gap-2 px-6 py-3 text-sm font-bold rounded-xl transition-all hover:opacity-90 active:scale-95"
+            className="flex items-center gap-2 px-6 py-3 text-sm font-bold rounded-xl transition-[opacity,transform] hover:opacity-90 active:scale-95"
             style={{
               backgroundColor: 'var(--primary)',
               color: 'var(--primary-foreground)',
@@ -173,18 +169,7 @@ export default function LandingPage() {
             Start Your Legal Query
             <ArrowRight size={15} />
           </button>
-          <a
-            href="#how-it-works"
-            className="flex items-center gap-2 px-6 py-3 text-sm font-semibold rounded-xl transition-all hover:opacity-80"
-            style={{
-              border: '1px solid var(--border)',
-              color: 'var(--foreground)',
-              fontFamily: 'var(--font-display)',
-            }}
-          >
-            Learn More
-            <ChevronRight size={15} />
-          </a>
+
         </div>
 
         {/* Trust signals */}
@@ -204,114 +189,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Features */}
-      <section id="features" className="px-6 py-16 max-w-5xl mx-auto">
-        <div className="text-center mb-12">
-          <p className="text-xs font-mono uppercase tracking-widest mb-3" style={{ color: 'var(--primary)', fontFamily: 'var(--font-mono)' }}>
-            Why Legal Navigator
-          </p>
-          <h2 className="text-3xl font-bold" style={{ fontFamily: 'var(--font-display)', letterSpacing: '-0.02em' }}>
-            Built differently from general AI
-          </h2>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          {features.map(f => {
-            const Icon = f.icon;
-            return (
-              <div
-                key={f.title}
-                className="p-6 rounded-2xl"
-                style={{ border: '1px solid var(--border)', backgroundColor: 'var(--card)' }}
-              >
-                <div
-                  className="w-9 h-9 rounded-xl flex items-center justify-center mb-4"
-                  style={{ backgroundColor: 'color-mix(in srgb, var(--primary) 10%, transparent)' }}
-                >
-                  <Icon size={17} style={{ color: 'var(--primary)' }} />
-                </div>
-                <h3 className="text-sm font-bold mb-2" style={{ fontFamily: 'var(--font-display)', color: 'var(--foreground)' }}>
-                  {f.title}
-                </h3>
-                <p className="text-sm leading-relaxed" style={{ color: 'var(--muted-foreground)' }}>
-                  {f.description}
-                </p>
-              </div>
-            );
-          })}
-        </div>
-      </section>
 
-      {/* How it works */}
-      <section id="how-it-works" className="px-6 py-16" style={{ backgroundColor: 'var(--muted)' }}>
-        <div className="max-w-3xl mx-auto">
-          <div className="text-center mb-12">
-            <p className="text-xs font-mono uppercase tracking-widest mb-3" style={{ color: 'var(--primary)', fontFamily: 'var(--font-mono)' }}>
-              How It Works
-            </p>
-            <h2 className="text-3xl font-bold" style={{ fontFamily: 'var(--font-display)', letterSpacing: '-0.02em' }}>
-              From question to cited answer
-            </h2>
-          </div>
-          <div className="space-y-6">
-            {steps.map((s, i) => (
-              <div key={s.n} className="flex gap-5">
-                <div
-                  className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 font-bold text-xs"
-                  style={{
-                    backgroundColor: 'var(--primary)',
-                    color: 'var(--primary-foreground)',
-                    fontFamily: 'var(--font-mono)',
-                  }}
-                >
-                  {s.n}
-                </div>
-                <div className="pt-2">
-                  <h3 className="text-sm font-bold mb-1" style={{ fontFamily: 'var(--font-display)', color: 'var(--foreground)' }}>
-                    {s.title}
-                  </h3>
-                  <p className="text-sm leading-relaxed" style={{ color: 'var(--muted-foreground)' }}>
-                    {s.body}
-                  </p>
-                  {i < steps.length - 1 && (
-                    <div className="w-px h-5 mt-4 ml-[-22px]" style={{ backgroundColor: 'var(--border)' }} />
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Why different */}
-      <section className="px-6 py-16 max-w-4xl mx-auto">
-        <div className="text-center mb-12">
-          <p className="text-xs font-mono uppercase tracking-widest mb-3" style={{ color: 'var(--primary)', fontFamily: 'var(--font-mono)' }}>
-            Why This Is Different
-          </p>
-          <h2 className="text-3xl font-bold" style={{ fontFamily: 'var(--font-display)', letterSpacing: '-0.02em' }}>
-            Not just AI. Retrieval-augmented legal information.
-          </h2>
-        </div>
-        <div
-          className="rounded-2xl p-8"
-          style={{ border: '1px solid var(--border)', backgroundColor: 'var(--card)' }}
-        >
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
-            {[
-              { stat: '50+', label: 'U.S. jurisdictions covered' },
-              { stat: '94%', label: 'Average source confidence score' },
-              { stat: '< 10s', label: 'Median response time' },
-            ].map(item => (
-              <div key={item.stat}>
-                <p className="text-4xl font-bold mb-1" style={{ fontFamily: 'var(--font-display)', color: 'var(--primary)' }}>
-                  {item.stat}
-                </p>
-                <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>{item.label}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
 
       {/* FAQ */}
       <section id="faq" className="px-6 py-16 max-w-3xl mx-auto">
@@ -341,33 +219,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* CTA */}
-      <section
-        className="px-6 py-20 text-center"
-        style={{ backgroundColor: 'var(--primary)' }}
-      >
-        <h2
-          className="text-3xl font-bold mb-4 text-white"
-          style={{ fontFamily: 'var(--font-display)', letterSpacing: '-0.02em' }}
-        >
-          Ready to understand your rights?
-        </h2>
-        <p className="text-sm mb-8 max-w-md mx-auto" style={{ color: 'rgba(255,255,255,0.75)' }}>
-          Start for free. No account required for your first query.
-        </p>
-        <button
-          onClick={() => handleNavigate('chat')}
-          className="inline-flex items-center gap-2 px-8 py-3.5 text-sm font-bold rounded-xl transition-all hover:opacity-90 active:scale-95"
-          style={{
-            backgroundColor: 'white',
-            color: 'var(--primary)',
-            fontFamily: 'var(--font-display)',
-          }}
-        >
-          Start Your Legal Query
-          <ArrowRight size={15} />
-        </button>
-      </section>
 
       {/* Footer */}
       <footer
@@ -376,12 +227,7 @@ export default function LandingPage() {
       >
         <div className="max-w-5xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <div
-              className="w-6 h-6 rounded-md flex items-center justify-center text-white text-[9px] font-bold"
-              style={{ backgroundColor: 'var(--primary)', fontFamily: 'var(--font-display)' }}
-            >
-              LN
-            </div>
+            <LogoIcon size={24} darkMode={darkMode} />
             <span className="text-sm font-bold" style={{ fontFamily: 'var(--font-display)' }}>
               Legal Navigator
             </span>
@@ -389,13 +235,10 @@ export default function LandingPage() {
           <p className="text-xs text-center" style={{ color: 'var(--muted-foreground)' }}>
             For informational purposes only. Not legal advice. Always consult a licensed attorney.
           </p>
-          <div className="flex gap-5 text-xs" style={{ color: 'var(--muted-foreground)' }}>
-            <a href="#" className="hover:opacity-80">Privacy</a>
-            <a href="#" className="hover:opacity-80">Terms</a>
-            <a href="#" className="hover:opacity-80">Contact</a>
-          </div>
+
         </div>
       </footer>
+      </div>
     </div>
   );
 }

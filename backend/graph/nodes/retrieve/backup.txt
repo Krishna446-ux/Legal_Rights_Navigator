@@ -1,0 +1,280 @@
+import asyncio
+
+from huggingface_hub import InferenceClient
+from huggingface_hub.errors import HfHubHTTPError
+from loguru import logger
+import numpy as np
+
+from services.get_embeddings import get_embedding
+from graph.nodes.retrieve.retrieve_pgvector import retrive_pgvector
+from enums.Domain import Domain
+from graph.state import FullGraphState
+from core.config import setting
+from graph.node_types.metadata_filter import MetadataFilter
+from graph.node_types.graph_states_types import RetrievedChunk  # Pydantic model — msgpack-safe
+from ingestion_engine.models import ChunkMetadata
+
+
+async def retrieve_chunks(state: FullGraphState,top_k: int = 5,):
+    try:
+        logger.debug("HuggingFace InferenceClient initialised for retrieval")
+    except Exception as e:
+        logger.exception(f"Failed to initialise HuggingFace InferenceClient: {e}")
+        raise
+
+    parts = [state.get("normalized_query")]
+
+    working_memory = state.get("working_memory")
+    if working_memory:
+        parts.append(f"Known facts: {working_memory}")
+        
+    for message in state.get("messages", [])[-5:]:
+        parts.append(message.content)
+    
+    query_to_embed = "\n".join(part for part in parts if part)
+
+    if not query_to_embed:
+        logger.error("retrieve_chunks called with no query in state")
+        raise ValueError("No query available for retrieval")
+
+    logger.debug(f"Embedding query (length={len(query_to_embed)}): '{query_to_embed[:80]}'")
+
+    loop = asyncio.get_running_loop()
+    # get_embedding is CPU-bound (SentenceTransformer) — offload to thread pool
+    embedding = await loop.run_in_executor(None, get_embedding, query_to_embed)
+    
+
+    if embedding is None:
+        logger.error("Embedding is None after retry loop — this should not happen")
+        raise RuntimeError("Failed to obtain embedding after retries")
+
+    metadata_filters: MetadataFilter = {}
+
+    domain = state.get("domain")
+    if domain:
+        metadata_filters["domain"] = domain
+
+    jurisdiction = state.get("jurisdiction")
+    if jurisdiction:
+        metadata_filters["jurisdiction"] = jurisdiction
+
+    document_type = state.get("requested_document_type")
+    if document_type:
+        metadata_filters["document_type"] = document_type
+
+    logger.debug(f"Querying PGVector with metadata_filters={metadata_filters}, top_k={top_k}")
+
+    try:
+        retrieved = await retrive_pgvector(
+            query_embedding=embedding,
+            metadata_filter=metadata_filters,
+            limit=top_k,
+            normalized_query=query_to_embed,   # Priority 4: chunk_type soft ordering
+        )
+        logger.info(f"PGVector returned {len(retrieved)} result(s)")
+    except Exception as e:
+        logger.exception(f"PGVector retrieval failed: {e}")
+        raise
+
+    # Convert SQLAlchemy ORM rows → RetrievedChunk Pydantic models.
+    # IMPORTANT: Pydantic model_validate silently keeps numpy.float64 as-is because
+    # numpy.float64 is a subclass of float. LangGraph's msgpack checkpointer rejects it.
+    # The only reliable fix is a JSON round-trip: json.dumps forces all numpy types to
+    # plain Python primitives (via the numpy_default encoder), and json.loads reads them
+    # back as native int/float/str — guaranteed msgpack-serializable.
+    import json
+
+    def _numpy_default(obj):
+        """Coerce numpy scalar types → plain Python primitives for json.dumps."""
+        try:
+            import numpy as np
+            if isinstance(obj, np.integer):
+                return int(obj)
+            if isinstance(obj, np.floating):
+                return float(obj)
+            if isinstance(obj, np.ndarray):
+                return obj.tolist()
+        except ImportError:
+            pass
+        raise TypeError(f"Object of type {type(obj)} is not JSON serializable")
+
+    result: list[RetrievedChunk] = []
+    for chunk, distance in retrieved:
+        raw_meta = chunk.chunk_metadata if isinstance(chunk.chunk_metadata, dict) else chunk.chunk_metadata
+        # Force through JSON round-trip to strip any numpy types
+        clean_meta = json.loads(
+            json.dumps(raw_meta if isinstance(raw_meta, dict) else raw_meta.model_dump(), default=_numpy_default)
+        )
+        safe_meta = ChunkMetadata.model_validate(clean_meta)
+        print("distance:", type(distance))
+        print("score:", type(float(float(1) - float(distance))))
+
+        for k, v in clean_meta.items():
+            if isinstance(v, np.generic):
+                print("META:", k, type(v), v)
+        result.append(
+            RetrievedChunk(
+                chunk_id=str(chunk.id),
+                text=str(chunk.text) if chunk.text else "",
+                chunk_metadata=safe_meta,
+                # float() alone won't work — numpy.float64 subclasses float but stays numpy.
+                # Calling float() on the result of (1 - distance) where distance is numpy.float64
+                # returns a Python float only if we explicitly cast the subtraction result.
+                score=float(float(1) - float(distance)),
+            )
+        )
+    return result
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+from loguru import logger
+from sqlalchemy import case, or_, select
+import numpy as np
+from models.legal_chunks import LegalChunk
+from core.db_session import AsyncSessionLocal
+from graph.node_types.metadata_filter import MetadataFilter
+
+DISTANCE_THRESHOLD = 0.5
+
+_KEYWORD_TO_CHUNK_TYPES: dict[str, list[str]] = {
+    "penalty":    ["penalty", "obligation"],
+    "fine":       ["penalty"],
+    "right":      ["right", "obligation"],
+    "eligible":   ["eligibility", "right"],
+    "procedure":  ["procedure"],
+    "how to":     ["procedure"],
+    "definition": ["definition"],
+    "exception":  ["exception"],
+    "obligation": ["obligation"],
+}
+
+
+def _preferred_chunk_types(query: str | None) -> list[str]:
+    if not query:
+        return []
+    q = query.lower()
+    for keyword, types in _KEYWORD_TO_CHUNK_TYPES.items():
+        if keyword in q:
+            return types
+    return []
+
+
+async def retrive_pgvector(
+    query_embedding: list[float],
+    metadata_filter: MetadataFilter | None = None,
+    limit: int = 5,
+    normalized_query: str | None = None,
+) -> list:
+    try:
+        distance = LegalChunk.embedding.cosine_distance(query_embedding).label("distance")
+
+        preferred = _preferred_chunk_types(normalized_query)
+        if preferred:
+            chunk_type_col = LegalChunk.chunk_metadata["chunk_type"].as_string()
+            # SQLAlchemy 2.0 case() takes (condition, result) tuples — dict form was removed.
+            # CASE
+            # WHEN chunk_type='penalty' THEN 0
+            # WHEN chunk_type='obligation' THEN 0
+            # ELSE 1
+            # END
+            priority = case(
+                *[(chunk_type_col == ct, 0) for ct in preferred],
+                else_=1,
+            ).label("chunk_priority")
+            base = (
+                select(LegalChunk, distance)
+                .where(distance <= DISTANCE_THRESHOLD)
+                .order_by(priority, distance)
+                .limit(limit)
+            )
+        else:
+            base = (
+                select(LegalChunk, distance)
+                .where(distance <= DISTANCE_THRESHOLD)
+                .order_by(distance)
+                .limit(limit)
+            )
+
+        def apply_filters(stmt, f: MetadataFilter | None):
+            if not f:
+                return stmt
+            if jurisdictions := f.get("jurisdiction"):
+                stmt = stmt.where(or_(
+                    *[LegalChunk.chunk_metadata["jurisdictions"].contains([j]) for j in jurisdictions]
+                ))
+            if doc_type := f.get("document_type"):
+                stmt = stmt.where(LegalChunk.chunk_metadata["document_type"].as_string() == doc_type)
+            if domain := f.get("domain"):
+                stmt = stmt.where(
+                    LegalChunk.chunk_metadata["domain"].as_string() == (domain.value if hasattr(domain, "value") else str(domain))
+                )
+            return stmt
+
+        def clean_rows(rows):
+            cleaned = []
+            for chunk, distance in rows:
+                if isinstance(chunk.chunk_metadata, dict):
+                    chunk.chunk_metadata = {
+                        k: float(v) if isinstance(v, np.floating) else v
+                        for k, v in chunk.chunk_metadata.items()
+                    }
+                cleaned.append((chunk, float(distance)))
+            return cleaned
+
+
+        async with AsyncSessionLocal() as session:
+            # Attempt 1: full filters
+            rows = clean_rows(
+                (await session.execute(apply_filters(base, metadata_filter))).all()
+            )
+            if rows:
+                return rows
+
+            # Attempt 2: domain only
+            if metadata_filter and (
+                metadata_filter.get("jurisdiction")
+                or metadata_filter.get("document_type")
+            ):
+                logger.warning("No results with full filters — retrying with domain only")
+
+                domain_only: MetadataFilter = (
+                    {"domain": metadata_filter["domain"]}
+                    if metadata_filter.get("domain")
+                    else {}
+                )
+
+                rows = clean_rows(
+                    (await session.execute(apply_filters(base, domain_only or None))).all()
+                )
+                if rows:
+                    return rows
+
+            # Attempt 3: pure semantic
+            if metadata_filter:
+                logger.warning("No results with domain filter — falling back to pure semantic search")
+
+            rows = clean_rows(
+                (await session.execute(base)).all()
+            )
+            return rows
+    except Exception as e:
+        logger.exception(f"PGVector query failed: {e}")
+        raise

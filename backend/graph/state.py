@@ -1,5 +1,6 @@
 from datetime import datetime
 from typing import Annotated, Optional,Literal,TypedDict
+from uuid import UUID
 
 from langgraph.graph import add_messages
 from pydantic import BaseModel
@@ -24,7 +25,7 @@ class ConversationContext(BaseModel):
     
 class FullGraphState(TypedDict, total=False):
     # Context
-    conversation_id: str
+    conversation_id: UUID
     messages: Annotated[list[BaseMessage],add_messages]
 
     # Conversation Context
@@ -59,3 +60,7 @@ class FullGraphState(TypedDict, total=False):
     tool_results: dict
     # Final answer
     response: str | None
+
+    # Configs
+    max_retrievals: int
+    max_clarifications: int

@@ -12,28 +12,12 @@ from graph.state import FullGraphState
 from core.config import setting
 from graph.node_types.metadata_filter import MetadataFilter
 from graph.node_types.graph_states_types import RetrievedChunk  # Pydantic model — msgpack-safe
+from ingestion_engine.models import ChunkMetadata
 
 
-async def retrieve_chunks(
-    state: FullGraphState,
-    top_k: int = 5,
-):
-    try:
-        logger.debug("HuggingFace InferenceClient initialised for retrieval")
-    except Exception as e:
-        logger.exception(f"Failed to initialise HuggingFace InferenceClient: {e}")
-        raise
-
-    parts = [state.get("normalized_query")]
-
-    working_memory = state.get("working_memory")
-    if working_memory:
-        parts.append(f"Known facts: {working_memory}")
-        
-    for message in state.get("messages", [])[-5:]:
-        parts.append(message.content)
+async def retrieve_chunks(state: FullGraphState, query: str, top_k: int = 5):
     
-    query_to_embed = "\n".join(part for part in parts if part)
+    query_to_embed = query
 
     if not query_to_embed:
         logger.error("retrieve_chunks called with no query in state")
@@ -78,16 +62,29 @@ async def retrieve_chunks(
         logger.exception(f"PGVector retrieval failed: {e}")
         raise
 
-    # Convert SQLAlchemy ORM rows → RetrievedChunk Pydantic models.
-    # Raw ORM objects are not msgpack-serializable and would crash the LangGraph checkpointer.
+    import json
+
+    def _strip_numpy(obj):
+        """Force object through JSON to strip numpy types for msgpack."""
+        def default(o):
+            if hasattr(o, "item"): return o.item()
+            if hasattr(o, "tolist"): return o.tolist()
+            raise TypeError
+        data = obj if isinstance(obj, dict) else obj.model_dump()
+        return json.loads(json.dumps(data, default=default))
+
     result: list[RetrievedChunk] = []
     for chunk, distance in retrieved:
+        clean_meta = _strip_numpy(chunk.chunk_metadata)
+        safe_meta = ChunkMetadata.model_validate(clean_meta)
+        
         result.append(
             RetrievedChunk(
                 chunk_id=str(chunk.id),
-                text=chunk.text,
-                chunk_metadata=chunk.chunk_metadata,
-                score=float(1 - distance),  # cosine distance → similarity score
+                text=str(chunk.text) if chunk.text else "",
+                chunk_metadata=safe_meta,
+                score=1.0 - float(distance),
             )
         )
     return result
+

@@ -1,4 +1,5 @@
 from loguru import logger
+from langchain_core.messages import AIMessage
 from graph.nodes.validity_gate.embeddings_filter import apply_tier2_rules
 from graph.nodes.validity_gate.rules import apply_tier1_rules, GateResult
 from graph.node_types.validity_node import Validity_Gate_Type
@@ -22,25 +23,40 @@ async def run_validity_gate(state: FullGraphState):
 
         if tier1_result == GateResult.REJECT:
             logger.info("Query rejected at Tier 1")
-            return {"validity":{"validity_result": GateResult.REJECT, "gate_tier": 1, "similarity_score": None}}
+            return {
+                "validity": {"validity_result": GateResult.REJECT, "gate_tier": 1, "similarity_score": None},
+                "messages": [AIMessage(content="I am a specialized legal assistant focused on Indian law. Please ask a legal question or provide more context so I can assist you.")]
+            }
 
         # Tier 2 — embedding similarity filter
         tier2_result, similarity_score = await apply_tier2_rules(query)
         logger.debug(f"Tier 2 result: {tier2_result}, similarity_score={similarity_score:.4f}")
 
-        if tier2_result in (GateResult.PASS, GateResult.REJECT):
-            logger.info(f"Query {'passed' if tier2_result == GateResult.PASS else 'rejected'} at Tier 2 (score={similarity_score:.4f})")
-            return {"validity":{"validity_result": tier2_result, "gate_tier": 2, "similarity_score": similarity_score}}
-        tier3_result=await tier3_node(state)
+        if tier2_result == GateResult.REJECT:
+            logger.info(f"Query rejected at Tier 2 (score={similarity_score:.4f})")
+            return {
+                "validity": {"validity_result": tier2_result, "gate_tier": 2, "similarity_score": similarity_score},
+                "messages": [AIMessage(content="Your question does not appear to be related to Indian legal matters. I can only assist with topics like labor rights, tenant law, consumer protection, etc.")]
+            }
+        
+        if tier2_result == GateResult.PASS:
+            logger.info(f"Query passed at Tier 2 (score={similarity_score:.4f})")
+            return {
+                "validity": {"validity_result": tier2_result, "gate_tier": 2, "similarity_score": similarity_score}
+            }
 
         # Falls through to Tier 3 LLM gate
         logger.info(f"Query uncertain after Tier 2, escalating to Tier 3 (score={similarity_score:.4f})")
+        tier3_result = await tier3_node(state)
+
+        is_pass = tier3_result.is_legal
         return {
             "validity": {
-                "validity_result": GateResult.PASS if tier3_result.is_legal else GateResult.REJECT,          # Bug 9 fix: attribute access, not dict
+                "validity_result": GateResult.PASS if is_pass else GateResult.REJECT,
                 "gate_tier": 3,
                 "similarity_score": tier3_result.is_legal_confidence,
-            }
+            },
+            "messages": [] if is_pass else [AIMessage(content=tier3_result.reasoning)]
         }
 
     except Exception as e:

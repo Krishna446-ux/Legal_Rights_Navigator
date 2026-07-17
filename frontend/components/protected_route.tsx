@@ -2,20 +2,17 @@
 import { useContext, useEffect } from "react";
 import { AuthContext } from "../lib/auth-context"
 import { useRouter } from "next/navigation"
-import Spinner from "./Spinner";
 export function ProtectedRoute({ children }: { children: React.ReactNode }) {
     const state = useContext(AuthContext);
     const router = useRouter();
 
-    const profile = state?.profile ?? null;
-    const loading = state?.loading ?? true;
+    const isAuthenticated = !!state && state.loading == false && Object.keys(state).length > 0
 
     useEffect(() => {
-        if (profile == null || (loading == false && Object.keys(profile).length === 0)) {
+        if (!isAuthenticated) {
             router.push("/login");
         }
-    }, [profile, loading, router]);
+    }, [isAuthenticated, router]);
 
-    if (loading) return <Spinner />;
     return <>{children}</>;
 }

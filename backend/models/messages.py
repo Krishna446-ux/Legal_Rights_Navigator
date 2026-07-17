@@ -53,7 +53,11 @@ class Message(Base):
         Text,
         nullable=False,
     )
-
+    
+    client_sent_at: Mapped[datetime | None] = mapped_column(
+    DateTime(timezone=True),
+    nullable=True,
+    )
     metaData: Mapped[dict] = mapped_column(
         JSONB,
         server_default=text("'{}'::jsonb"),

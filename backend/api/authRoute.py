@@ -96,7 +96,7 @@ async def google_callback(
         #print("ID Info:", id_info)
         features=check_granted_scopes(credentials)
         #inserting the user inside the database if not already present
-        await insert_user_entry(
+        db_response=await insert_user_entry(
             name=id_info["name"],
             email=id_info["email"],
             sub=id_info["sub"]
@@ -104,6 +104,7 @@ async def google_callback(
         logger.info(f"User upserted: email={id_info['email']}")
 
         jwt_token = create_access_token(
+            user_id=db_response["id"],
             name=id_info["name"],
             email=id_info["email"],
             sub=id_info["sub"]

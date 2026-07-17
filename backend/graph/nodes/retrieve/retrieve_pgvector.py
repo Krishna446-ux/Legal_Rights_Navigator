@@ -1,6 +1,6 @@
 from loguru import logger
 from sqlalchemy import case, or_, select
-
+import numpy as np
 from models.legal_chunks import LegalChunk
 from core.db_session import AsyncSessionLocal
 from graph.node_types.metadata_filter import MetadataFilter
@@ -43,6 +43,11 @@ async def retrive_pgvector(
         if preferred:
             chunk_type_col = LegalChunk.chunk_metadata["chunk_type"].as_string()
             # SQLAlchemy 2.0 case() takes (condition, result) tuples — dict form was removed.
+            # CASE
+            # WHEN chunk_type='penalty' THEN 0
+            # WHEN chunk_type='obligation' THEN 0
+            # ELSE 1
+            # END
             priority = case(
                 *[(chunk_type_col == ct, 0) for ct in preferred],
                 else_=1,
@@ -83,9 +88,18 @@ async def retrive_pgvector(
                 return rows
 
             # Attempt 2: domain only
-            if metadata_filter and (metadata_filter.get("jurisdiction") or metadata_filter.get("document_type")):
+            if metadata_filter and (
+                metadata_filter.get("jurisdiction")
+                or metadata_filter.get("document_type")
+            ):
                 logger.warning("No results with full filters — retrying with domain only")
-                domain_only: MetadataFilter = {"domain": metadata_filter["domain"]} if metadata_filter.get("domain") else {}
+
+                domain_only: MetadataFilter = (
+                    {"domain": metadata_filter["domain"]}
+                    if metadata_filter.get("domain")
+                    else {}
+                )
+
                 rows = (await session.execute(apply_filters(base, domain_only or None))).all()
                 if rows:
                     return rows
@@ -93,10 +107,8 @@ async def retrive_pgvector(
             # Attempt 3: pure semantic
             if metadata_filter:
                 logger.warning("No results with domain filter — falling back to pure semantic search")
-                rows = (await session.execute(base)).all()
 
-            return rows
-
+            return (await session.execute(base)).all()
     except Exception as e:
         logger.exception(f"PGVector query failed: {e}")
         raise

@@ -1,3 +1,7 @@
+
+
+from uuid import UUID
+
 from core.config import setting
 from datetime import datetime, timedelta, timezone
 from loguru import logger
@@ -64,10 +68,11 @@ def check_granted_scopes(credentials):
 
 
 
-def create_access_token(name: str, email: str, sub: str) -> str:
+def create_access_token(user_id:UUID,name: str, email: str, sub: str) -> str:
     logger.debug(f"Creating access token for sub={sub}")
     try:
         payload = {
+            "user_id":user_id,
             "name": name,
             "email": email,
             "sub": sub,

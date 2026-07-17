@@ -108,7 +108,7 @@ export default function ContextPanel({ citations, sources, collapsed, onToggle, 
               style={{ backgroundColor: 'var(--border)' }}
             >
               <div
-                className="h-full rounded-full transition-all duration-700"
+                className="h-full rounded-full transition-[width,background-color] duration-700"
                 style={{ width: '91%', backgroundColor: '#16a34a' }}
               />
             </div>
@@ -168,21 +168,7 @@ export default function ContextPanel({ citations, sources, collapsed, onToggle, 
           </SectionCard>
         )}
 
-        {/* Relevant sections */}
-        {citations.length > 0 && (
-          <SectionCard title="Relevant Sections" icon={<Scale size={13} />} defaultOpen={false}>
-            <div className="mt-2 space-y-1.5">
-              {citations.map(c => (
-                <div key={c.id} className="flex items-start gap-1.5">
-                  <span className="text-[10px] font-mono flex-shrink-0 mt-0.5" style={{ color: 'var(--primary)' }}>§</span>
-                  <span className="text-[10px] leading-relaxed" style={{ color: 'var(--muted-foreground)', fontFamily: 'var(--font-mono)' }}>
-                    {c.section}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </SectionCard>
-        )}
+
 
         {/* Case metadata */}
         <SectionCard title="Case Metadata" icon={<FileText size={13} />} defaultOpen={false}>

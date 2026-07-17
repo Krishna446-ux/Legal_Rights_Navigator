@@ -1,10 +1,19 @@
 'use client'
-import { createContext, useContext, useState, useEffect } from "react"
+import { createContext, useState, useEffect } from "react"
 import logger from "./pino";
 import { authState } from "../types/authState";
-export const AuthContext = createContext<authState | null>(null);
+export type AuthContextValue = authState & {
+    logout: () => void;
+};
+
+export const AuthContext = createContext<AuthContextValue | any>(null);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [state, setAuthState] = useState<authState>({ profile: {}, loading: true });
+
+    const logout = () => {
+        setAuthState({ profile: {}, loading: false });
+    };
+
     useEffect(() => {
         logger.info("Fetching user info...");
         async function loadUser() {
@@ -30,7 +39,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
             } catch (err) {
 
-                console.error("Error fetching user info:", err);
+                logger.error(err, "Error fetching user info:");
 
                 setAuthState({
 
@@ -48,8 +57,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     }, []);
     console.log("Auth state:", state);
+    const value = {
+        ...state,
+        logout,
+    };
+
     return (
-        <AuthContext.Provider value={state}>
+        <AuthContext.Provider value={value}>
             {children}
         </AuthContext.Provider>
     );

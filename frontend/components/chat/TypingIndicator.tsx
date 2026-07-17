@@ -1,13 +1,14 @@
 'use client';
 
+import { useTheme } from '../../lib/theme-context';
+import { LogoIcon } from '../shared/LogoIcon';
+
 export default function TypingIndicator() {
+  const { darkMode } = useTheme();
   return (
     <div className="flex items-center gap-3 py-2">
-      <div
-        className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 text-white text-xs font-bold"
-        style={{ backgroundColor: 'var(--primary)', fontFamily: 'var(--font-display)' }}
-      >
-        LN
+      <div className="flex-shrink-0 mt-0.5">
+        <LogoIcon size={28} darkMode={darkMode} />
       </div>
       <div
         className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-2xl rounded-tl-sm"

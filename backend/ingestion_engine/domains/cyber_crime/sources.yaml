@@ -1,0 +1,32 @@
+sources:
+  - url: "https://www.indiacode.nic.in/bitstream/123456789/13116/1/it_act_2000_updated.pdf"
+    document_title: "THE INFORMATION TECHNOLOGY ACT, 2000"
+    document_type: "Act"
+    issuing_authority: "Ministry of Law and Justice, Legislative Department"
+    jurisdictions: ["central"]
+    date: 2000-06-09
+    domain: "cyber_crime"
+
+  - url: "https://www.meity.gov.in/static/uploads/2024/02/Information-Technology-Intermediary-Guidelines-and-Digital-Media-Ethics-Code-Rules-2021-updated-06.04.2023-1-2.pdf"
+    document_title: "Information Technology (Intermediary Guidelines and Digital Media Ethics Code) Rules, 2021"
+    document_type: "Rules"
+    issuing_authority: "Ministry of Electronics and Information Technology"
+    jurisdictions: ["central"]
+    date: 2021-02-25
+    domain: "cyber_crime"
+
+  - url: "https://www.indiacode.nic.in/bitstream/123456789/22037/1/a2023-22.pdf"
+    document_title: "THE DIGITAL PERSONAL DATA PROTECTION ACT, 2023"
+    document_type: "Act"
+    issuing_authority: "Ministry of Law and Justice, Legislative Department"
+    jurisdictions: ["central"]
+    date: 2023-08-11
+    domain: "cyber_crime"
+
+  - url: "https://www.meity.gov.in/static/uploads/2025/11/53450e6e5dc0bfa85ebd78686cadad39.pdf"
+    document_title: "Digital Personal Data Protection Rules, 2025"
+    document_type: "Rules"
+    issuing_authority: "Ministry of Electronics and Information Technology"
+    jurisdictions: ["central"]
+    date: 2025-11-13
+    domain: "cyber_crime"

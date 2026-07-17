@@ -39,10 +39,6 @@ class User(Base):
         String,
         nullable=True,
     )
-    conversations: Mapped[list["Conversation"]]  = relationship(
-        "Conversation",
-        back_populates="user",
-    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),

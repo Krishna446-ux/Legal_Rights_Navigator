@@ -4,7 +4,7 @@ import asyncio
 from enums.GateResult import GateResult
 import json
 import time
-from services.local_embedding import get_embedding
+from services.get_embeddings import get_embedding
 from pathlib import Path
 from core.config import setting
 import numpy as np
@@ -32,7 +32,7 @@ def cosine_similarity(v1: ndarray, v2: ndarray):
     if norm_v1 == 0 or norm_v2 == 0:
         logger.warning("Zero-norm vector encountered in cosine_similarity — returning 0.0")
         return 0.0
-    return dot_product / (norm_v1 * norm_v2)
+    return float(dot_product / (norm_v1 * norm_v2))
 
 
 IN_DOMAIN_EMBEDDING = Path('IN_DOMAIN_EMBEDDINGS.json')
@@ -47,18 +47,18 @@ async def apply_tier2_rules(query: str) -> tuple[GateResult, float]:
         
         max_in = max(cosine_similarity(query_embedding, item["embedding"]) for item in IN_DOMAIN)
         max_out = max(cosine_similarity(query_embedding, item["embedding"]) for item in OUT_DOMAIN)
-
+        
         logger.debug(f"Tier 2 scores: max_in={max_in:.4f}, max_out={max_out:.4f}")
 
         if max_in > PASS_THRESHOLD and max_in > max_out:
             logger.info(f"Tier 2 PASS: max_in={max_in:.4f}")
-            return (GateResult.PASS, max_in)
+            return (GateResult.PASS, float(max_in))
         elif max_in < REJECT_THRESHOLD:
             logger.info(f"Tier 2 REJECT: max_in={max_in:.4f} below threshold {REJECT_THRESHOLD}")
-            return (GateResult.REJECT, max_in)
+            return (GateResult.REJECT, float(max_in))
 
         logger.info(f"Tier 2 UNCERTAIN: max_in={max_in:.4f}")
-        return (GateResult.UNCERTAIN, max_in)
+        return (GateResult.UNCERTAIN, float(max_in))
 
     except Exception as e:
         logger.exception(f"Tier 2 embedding filter failed: {e}")

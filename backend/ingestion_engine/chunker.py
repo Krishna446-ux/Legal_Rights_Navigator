@@ -326,8 +326,8 @@ def create_chunks_and_embed(pdf_source: str, doc_metadata: DocumentMetadata):
                         issuing_authority=doc_metadata.issuing_authority,
                         date=doc_metadata.date,
                         domain=doc_metadata.domain,
-                        chunk_type=r["chunk_type"],
-                        heading=r["title"],
+                        chunk_type=r.get("chunk_type","Unknown"),
+                        heading=r.get("title","Unknown"),
                         summary=r.get("summary"),
                         topics=r.get("topics", []),
                     )

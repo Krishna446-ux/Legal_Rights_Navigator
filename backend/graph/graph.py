@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Literal
 from uuid import UUID
 
@@ -12,7 +13,7 @@ from enums.GateResult import GateResult
 from graph.nodes.retrieve.retrieve import retrieve
 from graph.nodes.conversation.conversation_understanding import conversation_understanding
 
-max_retrieval=2
+
 
 # conversation_id=123456
 
@@ -26,6 +27,8 @@ max_retrieval=2
 #     }
 # )
 class LangGraph:
+    
+        
     def route_after_validation(self,state:FullGraphState):
         if state["validity"]["validity_result"]==GateResult.PASS: 
             return "pass"
@@ -45,15 +48,20 @@ class LangGraph:
         return "error"
 
     def route_after_understanding(self,state:FullGraphState):
-        if action:=state.get("next_action"):
-            if action==AgentAction.RETRIEVE:
-                if state.get("retrieval_count",0) <= max_retrieval:
+        action = state.get("next_action")
+        count = state.get("retrieval_count", 0)
+        max_ret = state.get("max_retrievals", 2)
+        from loguru import logger
+        logger.info(f"route_after_understanding evaluating: action='{action}', count={count}, type(action)={type(action)}")
+        
+        if action:
+            if action == AgentAction.RETRIEVE or str(action) == "retrieve" or str(action) == "AgentAction.RETRIEVE":
+                if count <= max_ret:
                     return "retrieve"
-                
                     
         return "pass"
     
-    def initialize(self,checkpointer):
+    def __init__(self,checkpointer):
         graph_builder=StateGraph(FullGraphState)
         graph_builder.add_node("run_validity_gate", run_validity_gate)
         graph_builder.add_node("retrieve", retrieve)
@@ -79,24 +87,20 @@ class LangGraph:
         self.graph = graph_builder.compile(
             checkpointer=checkpointer
         )
-        
-    def invoke(self, conversation_id: UUID, message: str, max_retrieval=2) -> FullGraphState:
-        result = self.graph.invoke(
-            {
-                "messages": [HumanMessage(content=message)],
-                "max_retrievals": max_retrieval,
-            },
-            config={"configurable": {"thread_id": conversation_id}},
-        )
-        return result
 
-    async def ainvoke(self, conversation_id: UUID, message: str, max_retrieval=2) -> FullGraphState:
+    async def ainvoke(self, conversation_id: UUID, message: str, date: str, max_retrievals: int = 2, max_clarifications: int = 2) -> FullGraphState:
         """Async version of invoke — required when called from async FastAPI endpoints."""
         result = await self.graph.ainvoke(
             {
-                "messages": [HumanMessage(content=message)],
-                "max_retrievals": max_retrieval,
+                "messages": [HumanMessage(content=message,additional_kwargs={
+                    "created_at": date})],
+                "max_retrievals": max_retrievals,
+                "max_clarifications": max_clarifications,
             },
             config={"configurable": {"thread_id": conversation_id}},
+            
         )
         return result
+    
+    def get_state(self,config):
+        return self.graph.get_state(config)

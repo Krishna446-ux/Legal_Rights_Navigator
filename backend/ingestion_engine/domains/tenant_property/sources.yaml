@@ -1,0 +1,32 @@
+sources:
+  - url: "http://mohua.gov.in/upload/uploadfiles/files/Model-Tenancy-Act-English-02_06_2021.pdf"
+    document_title: "The Model Tenancy Act, 2021"
+    document_type: "Model Act"
+    issuing_authority: "Ministry of Housing and Urban Affairs"
+    jurisdictions: ["central"]
+    date: 2021-06-02
+    domain: "tenant_property"
+
+  - url: "https://www.indiacode.nic.in/bitstream/123456789/2338/1/A1882-04.pdf"
+    document_title: "THE TRANSFER OF PROPERTY ACT, 1882"
+    document_type: "Act"
+    issuing_authority: "Ministry of Law and Justice, Legislative Department"
+    jurisdictions: ["central"]
+    date: 1882-02-17
+    domain: "tenant_property"
+
+  - url: "https://www.indiacode.nic.in/bitstream/123456789/17773/1/the_real_estate_(regulation_and_development)_act,_2016.pdf"
+    document_title: "THE REAL ESTATE (REGULATION AND DEVELOPMENT) ACT, 2016"
+    document_type: "Act"
+    issuing_authority: "Ministry of Law and Justice, Legislative Department"
+    jurisdictions: ["central"]
+    date: 2016-03-25
+    domain: "tenant_property"
+
+  - url: "https://www.indiacode.nic.in/bitstream/123456789/15937/1/the_registration_act,1908.pdf"
+    document_title: "THE REGISTRATION ACT, 1908"
+    document_type: "Act"
+    issuing_authority: "Ministry of Law and Justice, Legislative Department"
+    jurisdictions: ["central"]
+    date: 1908-12-18
+    domain: "tenant_property"
