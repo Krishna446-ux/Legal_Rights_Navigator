@@ -33,7 +33,7 @@ async def google_login() -> RedirectResponse:
             key="oauth_state",
             value=state,
         httponly=True,  # Blocks client-side scripts (like JavaScript) from accessing the cookie.
-        secure=False,      # Use False only for local HTTP development
+        secure=setting.environment != "development",      # Use False only for local HTTP development
             max_age=60 * 60,
             samesite="lax"
         )
@@ -41,7 +41,7 @@ async def google_login() -> RedirectResponse:
             key="code_verifier",
             value=flow.code_verifier,
         httponly=True,  # Blocks client-side scripts (like JavaScript) from accessing the cookie.
-        secure=False,      # Use False only for local HTTP development
+        secure=setting.environment != "development",      # Use False only for local HTTP development
             max_age=60 * 60,
             samesite="lax"
         )
@@ -117,7 +117,7 @@ async def google_callback(
             key="jwt_token",
             value=jwt_token,
             httponly=True,  # Blocks client-side scripts (like JavaScript) from accessing the cookie.
-            secure=False,      # Use False only for local HTTP development
+            secure=setting.environment != "development",      # Use False only for local HTTP development
             max_age=7 * 24 * 60 * 60,
             samesite="lax"
         )
