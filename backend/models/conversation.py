@@ -29,14 +29,6 @@ class Conversation(Base):
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
     )
-    # domain is NOT NULL in the DB — supply a Python-side default so SQLAlchemy
-    # always includes it in the INSERT statement (server_default only works when
-    # the Postgres column itself has a DEFAULT clause, which it does not here).
-    domain: Mapped[str] = mapped_column(
-        Text,
-        nullable=False,
-        default="",
-    )
     title: Mapped[str] = mapped_column(
         Text,
         nullable=False,
@@ -46,11 +38,5 @@ class Conversation(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),
-        nullable=False,
-    )
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        server_default=func.now(),
-        onupdate=func.now(),
         nullable=False,
     )

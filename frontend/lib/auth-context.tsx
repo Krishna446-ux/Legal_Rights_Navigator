@@ -37,7 +37,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [state, setAuthState] = useState<authState>({ profile: {}, loading: true });
 
     const logout = () => {
-        clearStoredToken();
         setAuthState({ profile: {}, loading: false });
     };
 
@@ -45,19 +44,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         logger.info("Fetching user info...");
         async function loadUser() {
             try {
-                consumeUrlToken();
-                const token = getStoredToken();
-                const headers: Record<string, string> = {};
-                if (token) {
-                    headers["Authorization"] = `Bearer ${token}`;
-                }
                 const res = await fetch(`${BACKEND_URL}/me`, {
                     credentials: "include",
-                    headers,
                 });
                 if (!res.ok) {
                     console.log("Error fetching user info: %s", res.status);
-                    clearStoredToken();
                     setAuthState({
                         profile: {},
                         loading: false,
@@ -75,7 +66,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                         loading: false,
                     });
                 } else {
-                    clearStoredToken();
                     setAuthState({
                         profile: {},
                         loading: false,
